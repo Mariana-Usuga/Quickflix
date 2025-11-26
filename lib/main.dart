@@ -1,215 +1,93 @@
+// sinippet mate app
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'services/mux_api_service.dart';
-import 'models/mux_asset.dart';
+import 'package:provider/provider.dart';
+import 'package:mux_videos_app/config/theme/app_theme.dart';
+import 'package:mux_videos_app/infraestructure/datasources/local_video_datasource_impl.dart';
+import 'package:mux_videos_app/infraestructure/repositories/video_post_repository_impl.dart';
+import 'package:mux_videos_app/presentation/providers/discover_provider.dart';
+import 'package:mux_videos_app/presentation/screens/discover/discover_screen.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  try {
-    await dotenv.load(fileName: '.env');
-  } catch (e) {
-    debugPrint('Error loading .env file: $e');
-  }
-  
-  runApp(const MyApp());
-}
+void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Mux Videos App',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+    //vamos a crear la instancia del repository y del data source
+    final videoPostRepository =
+        VideoPostsRepositoryImpl(videosDatasource: LocalVideoDatasource());
+
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          //ojo los change notifier solo se ejecuutan hasta que sea necesartia la instancia
+          lazy: false, //ESTO ES PARA QUE SE LANCE EL CONSTRUCTOR DE INMEDIATO
+          //ESTO ES UTIL PARA IR ADELANTANDO TAREAS ANTES DE QUE EL USUARIO LLEGUE A ELLAS
+          create: (_) => DiscoverProvider(videosRepository: videoPostRepository)
+            ..loadNextPage(), // operador de cascada
+        )
+      ],
+      child: MaterialApp(
+        title: 'TOKTIK',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme().gettheme(),
+        home: const DiscoverScreen(),
       ),
-      home: const AssetsListPage(),
     );
   }
 }
 
-class AssetsListPage extends StatefulWidget {
-  const AssetsListPage({super.key});
 
-  @override
-  State<AssetsListPage> createState() => _AssetsListPageState();
-}
 
-class _AssetsListPageState extends State<AssetsListPage> {
-  final MuxApiService _apiService = MuxApiService();
-  List<MuxAsset> _assets = [];
-  bool _isLoading = true;
-  String? _errorMessage;
+/*TEORIA
+ARQUITECTURA: 
 
-  @override
-  void initState() {
-    super.initState();
-    _loadAssets();
-  }
+asssets:son los recursos que se utilizan en la app (llamarlos tambien en yaml)
 
-  Future<void> _loadAssets() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+lib: es la libreria principal del proyecto
+    config:
+      theme: definicion del tema
+        app_theme : definicion del tema global
+      helpers: son los que dan ayuda al manejo de datos
+    domain:
+      datasources: son las fuentes de datos
+      entities: aqui tenemos el modelo de datos que tenenemos mas cercano a la regla de negocio
+      repositories: son los repositorios
+    share: es todo lo que va a ir compartido en la app
+      data: toda la informacion que va a compartir la app
+    presentation: es todo lo visual de la app
+      screens: cada una de las vistas
+        discover(nombre x): es el home screen
+      providers: todos los providers
+      widgets: todos los widgets reutilizables
+        shared: es todo lo que va a compartir a lo  largo de varios screens
+    infraestructure: Esta capa se encarga de la comunicación con las capas externas como la base de datos,servicios externos
+      models: es todo lo relacionado con la base de datos
+      datasources: son las implementaciones de los datasources
+      repositories: basicamente es quien va a llamar al datasource
+ 
 
-    try {
-      final response = await _apiService.listAssets();
-      setState(() {
-        _assets = response.data;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
-    }
-  }
 
-  String _formatDuration(double? duration) {
-    if (duration == null) return 'N/A';
-    final minutes = (duration / 60).floor();
-    final seconds = (duration % 60).floor();
-    return '${minutes}m ${seconds}s';
-  }
+FLUJO EN UNA ARQUITECTURA LIMPIA
+1. UI
+2. PRESENTACION
+3. CASOS DE USO
+4. REPOSITORIO
+5. INFOMACION REGRESA AL UI
 
-  String _formatDate(String? dateString) {
-    if (dateString == null) return 'N/A';
-    try {
-      final date = DateTime.parse(dateString);
-      return '${date.day}/${date.month}/${date.year}';
-    } catch (e) {
-      return dateString;
-    }
-  }
+ENTONCES: 
+la ui tiene la comunicacion con la presentacion la cual tiene los providers y gestores de estado 
+ estos terminan llamando los casos de uso que son las reglas de negocio  los cuales llaman repostitorios los cuales comunican con el data source 
+ y regresa al ui
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Mux Assets'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadAssets,
-            tooltip: 'Refresh',
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        size: 64,
-                        color: Colors.red,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Error loading assets',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text(
-                          _errorMessage!,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadAssets,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : _assets.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.video_library_outlined,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No assets found',
-                            style: Theme.of(context).textTheme.headlineSmall,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Upload some videos to Mux to see them here',
-                            style: Theme.of(context).textTheme.bodyMedium,
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadAssets,
-                      child: ListView.builder(
-                        itemCount: _assets.length,
-                        itemBuilder: (context, index) {
-                          final asset = _assets[index];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor:
-                                    asset.status == 'ready'
-                                        ? Colors.green
-                                        : asset.status == 'preparing'
-                                            ? Colors.orange
-                                            : Colors.grey,
-                                child: const Icon(Icons.video_library,
-                                    color: Colors.white),
-                              ),
-                              title: Text(
-                                asset.id,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const SizedBox(height: 4),
-                                  Text('Status: ${asset.status ?? 'N/A'}'),
-                                  Text(
-                                    'Duration: ${_formatDuration(asset.duration)}',
-                                  ),
-                                  Text(
-                                    'Created: ${_formatDate(asset.createdAt)}',
-                                  ),
-                                  if (asset.playbackIds != null &&
-                                      asset.playbackIds!.isNotEmpty)
-                                    Text(
-                                      'Playback ID: ${asset.playbackIds!.first.id}',
-                                    ),
-                                ],
-                              ),
-                              isThreeLine: true,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-    );
-  }
-}
+
+
+
+ CAPAS DE LA ARQUITECTURA
+ DOMAIN O DOMINIO
+        Esta capa es en la que definimmos las reglas que gobiernan toda la aplicacion
+
+  INFRESTUCTURE O DATA :
+
+ */
