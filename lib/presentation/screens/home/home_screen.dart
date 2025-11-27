@@ -47,12 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final heroVideo = videos[0];
     // Resto de videos para las secciones
     final popularVideos = videos.length > 1 ? videos.sublist(1) : <VideoPost>[];
-    final continueWatchingVideos = videos.length > 4 
-        ? videos.sublist(1, 4)
-        : popularVideos;
-    final topVideos = videos.length > 6 
-        ? videos.sublist(0, 6)
-        : videos;
+    final continueWatchingVideos =
+        videos.length > 4 ? videos.sublist(1, 4) : popularVideos;
+    final topVideos = videos.length > 6 ? videos.sublist(0, 6) : videos;
 
     return Scaffold(
       body: CustomScrollView(
@@ -64,8 +61,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 final screenHeight = MediaQuery.of(context).size.height;
                 final safeAreaTop = MediaQuery.of(context).padding.top;
                 final safeAreaBottom = MediaQuery.of(context).padding.bottom;
-                final availableHeight = screenHeight - safeAreaTop - safeAreaBottom;
-                
+                final availableHeight =
+                    screenHeight - safeAreaTop - safeAreaBottom;
+
                 return SizedBox(
                   height: availableHeight * 0.75,
                   child: Stack(
@@ -91,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             // Barra superior
                             const TopBar(),
 
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 5),
 
                             // Menú de categorías
                             CategoryMenu(
@@ -118,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
 
-                            const SizedBox(height: 12),
+                            //const SizedBox(height: 12),
                           ],
                         ),
                       ),
@@ -164,7 +162,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     showEpisodeInfo: true,
                   ),
 
-                const SizedBox(height: 80), // Espacio para la barra de navegación
+                const SizedBox(
+                    height: 80), // Espacio para la barra de navegación
               ],
             ),
           ),
@@ -180,4 +179,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
