@@ -1,0 +1,183 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:mux_videos_app/config/routes/app_router.dart';
+import 'package:mux_videos_app/domain/entities/video_post.dart';
+import 'package:mux_videos_app/presentation/providers/discover_provider.dart';
+import 'package:mux_videos_app/presentation/widgets/home/top_bar.dart';
+import 'package:mux_videos_app/presentation/widgets/home/category_menu.dart';
+import 'package:mux_videos_app/presentation/widgets/home/video_info_card.dart';
+import 'package:mux_videos_app/presentation/widgets/home/bottom_navigation_bar.dart';
+import 'package:mux_videos_app/presentation/widgets/home/video_section.dart';
+import 'package:mux_videos_app/presentation/widgets/video/fullscreen_player.dart';
+import 'package:mux_videos_app/presentation/widgets/video/video_background.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  String _selectedCategory = 'Popular';
+
+  @override
+  Widget build(BuildContext context) {
+    final discoverProvider = context.watch<DiscoverProvider>();
+
+    if (discoverProvider.initialLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    final videos = discoverProvider.videos;
+    if (videos.isEmpty) {
+      return const Scaffold(
+        body: Center(
+          child: Text('No hay videos disponibles'),
+        ),
+      );
+    }
+
+    // Video principal (hero)
+    final heroVideo = videos[0];
+    // Resto de videos para las secciones
+    final popularVideos = videos.length > 1 ? videos.sublist(1) : <VideoPost>[];
+    final continueWatchingVideos = videos.length > 4 
+        ? videos.sublist(1, 4)
+        : popularVideos;
+    final topVideos = videos.length > 6 
+        ? videos.sublist(0, 6)
+        : videos;
+
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          // Hero Section con video principal
+          SliverToBoxAdapter(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final screenHeight = MediaQuery.of(context).size.height;
+                final safeAreaTop = MediaQuery.of(context).padding.top;
+                final safeAreaBottom = MediaQuery.of(context).padding.bottom;
+                final availableHeight = screenHeight - safeAreaTop - safeAreaBottom;
+                
+                return SizedBox(
+                  height: availableHeight * 0.75,
+                  child: Stack(
+                    children: [
+                      // Video de fondo
+                      SizedBox.expand(
+                        child: FullScreenPlayer(
+                          videoUrl: heroVideo.videoUrl,
+                          caption: heroVideo.caption,
+                        ),
+                      ),
+
+                      // Overlay oscuro
+                      VideoBackground(
+                        colors: const [Colors.transparent, Colors.black87],
+                        stops: const [0.0, 1.0],
+                      ),
+
+                      // Contenido superpuesto
+                      SafeArea(
+                        child: Column(
+                          children: [
+                            // Barra superior
+                            const TopBar(),
+
+                            const SizedBox(height: 12),
+
+                            // Menú de categorías
+                            CategoryMenu(
+                              selectedCategory: _selectedCategory,
+                              onCategorySelected: (category) {
+                                setState(() {
+                                  _selectedCategory = category;
+                                });
+                              },
+                            ),
+
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.bottomCenter,
+                                child: VideoInfoCard(
+                                  video: heroVideo,
+                                  currentIndex: 0,
+                                  totalVideos: 1,
+                                  onPlayPressed: () {
+                                    // Navegar a la pantalla de scroll vertical
+                                    context.push(AppRouter.discover);
+                                  },
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 12),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // Secciones de videos
+          SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Sección Popular
+                if (popularVideos.isNotEmpty)
+                  VideoSection(
+                    title: 'Popular',
+                    videos: popularVideos,
+                  ),
+
+                // Sección Continue Watching
+                if (continueWatchingVideos.isNotEmpty)
+                  VideoSection(
+                    title: 'Continue Watching',
+                    videos: continueWatchingVideos,
+                    showEpisodeInfo: true,
+                  ),
+
+                // Sección Weekly Top 10
+                if (topVideos.isNotEmpty)
+                  VideoSection(
+                    title: 'Weekly Top 10',
+                    videos: topVideos,
+                  ),
+
+                // Sección Because you watched
+                if (popularVideos.isNotEmpty)
+                  VideoSection(
+                    title: 'Because you watched Accidentally in His Arms',
+                    videos: popularVideos,
+                    showEpisodeInfo: true,
+                  ),
+
+                const SizedBox(height: 80), // Espacio para la barra de navegación
+              ],
+            ),
+          ),
+        ],
+      ),
+      // Barra de navegación inferior fija
+      bottomNavigationBar: CustomBottomNavigationBar(
+        currentIndex: 0,
+        onTap: (navIndex) {
+          // Aquí puedes agregar navegación a otras pantallas
+        },
+      ),
+    );
+  }
+}
+

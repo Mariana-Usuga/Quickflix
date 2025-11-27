@@ -1,13 +1,28 @@
 // sinippet mate app
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:mux_videos_app/config/helpers/supabase_service.dart';
+import 'package:mux_videos_app/config/routes/app_router.dart';
 import 'package:mux_videos_app/config/theme/app_theme.dart';
 import 'package:mux_videos_app/infraestructure/datasources/local_video_datasource_impl.dart';
 import 'package:mux_videos_app/infraestructure/repositories/video_post_repository_impl.dart';
 import 'package:mux_videos_app/presentation/providers/discover_provider.dart';
-import 'package:mux_videos_app/presentation/screens/discover/discover_screen.dart';
 
-void main() => runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Cargar variables de entorno desde el archivo .env
+  await dotenv.load(fileName: '.env');
+
+  // Inicializar Supabase con las credenciales del archivo .env
+  await SupabaseService.initialize(
+    url: dotenv.env['SUPABASE_URL'] ?? '',
+    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
+  );
+
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -28,17 +43,15 @@ class MyApp extends StatelessWidget {
             ..loadNextPage(), // operador de cascada
         )
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
         title: 'TOKTIK',
         debugShowCheckedModeBanner: false,
         theme: AppTheme().gettheme(),
-        home: const DiscoverScreen(),
+        routerConfig: AppRouter.router,
       ),
     );
   }
 }
-
-
 
 /*TEORIA
 ARQUITECTURA: 

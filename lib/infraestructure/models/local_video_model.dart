@@ -20,13 +20,29 @@ class LocalVideoModel {
     this.views= 0,
   });
 
-  factory LocalVideoModel.fromJson(Map<String, dynamic> json) =>
-      LocalVideoModel(
-        name: json['name'] ?? 'no name', //esto es por si no viene el nombre desde el json
-        videoUrl: json['videoUrl'],
-        likes: json['likes'] ?? 0,
-        views: json['views'] ?? 0,
-      );
+  factory LocalVideoModel.fromJson(Map<String, dynamic> json) {
+    // Mapear campos de Supabase: title -> name, play_black_id -> videoUrl
+    final String title = json['title'] ?? json['name'] ?? 'no name';
+    final String? playBlackId = json['play_black_id'] as String?;
+    final String? playbackId = json['playback_id'] as String?;
+    final String? videoUrl = json['videoUrl'] as String?;
+    
+    return LocalVideoModel(
+      name: title,
+      videoUrl: videoUrl ?? _buildMuxVideoUrl(playBlackId ?? playbackId),
+      likes: json['likes'] ?? 0,
+      views: json['views'] ?? 0,
+    );
+  }
+
+  // Método helper para construir la URL de Mux desde el playback_id
+  static String _buildMuxVideoUrl(dynamic playbackId) {
+    if (playbackId == null || playbackId.toString().isEmpty) {
+      return '';
+    }
+    // Construir URL de Mux HLS
+    return 'https://stream.mux.com/$playbackId.m3u8';
+  }
 
 
   Map<String, dynamic> toJson() => {
