@@ -1,27 +1,31 @@
 // sinippet mate app
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:quickflix/features/auth/cubit/auth_cubit.dart';
+import 'package:quickflix/services/local_video_services.dart';
 import 'package:provider/provider.dart';
-import 'package:mux_videos_app/config/helpers/supabase_service.dart';
-import 'package:mux_videos_app/config/routes/app_router.dart';
-import 'package:mux_videos_app/config/theme/app_theme.dart';
-import 'package:mux_videos_app/infraestructure/datasources/local_video_datasource_impl.dart';
-import 'package:mux_videos_app/infraestructure/repositories/video_post_repository_impl.dart';
-import 'package:mux_videos_app/presentation/providers/discover_provider.dart';
+import 'package:quickflix/core/services/supabase_service.dart';
+import 'package:quickflix/core/router/app_router.dart';
+import 'package:quickflix/core/theme/app_theme.dart';
+import 'package:quickflix/providers/discover_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Cargar variables de entorno desde el archivo .env
   await dotenv.load(fileName: '.env');
-
+  
   // Inicializar Supabase con las credenciales del archivo .env
   await SupabaseService.initialize(
-    url: dotenv.env['SUPABASE_URL'] ?? '',
+      url: dotenv.env['SUPABASE_URL'] ?? '',
     anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
-  runApp(const MyApp());
+      runApp(MultiBlocProvider(providers: [
+    BlocProvider(create: (context) => AuthCubit(Supabase.instance.client)),
+  ], child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -30,8 +34,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     //vamos a crear la instancia del repository y del data source
-    final videoPostRepository =
-        VideoPostsRepositoryImpl(videosDatasource: LocalVideoDatasource());
+    final localVideoServices = LocalVideoServices();
 
     return MultiProvider(
       providers: [
@@ -39,15 +42,16 @@ class MyApp extends StatelessWidget {
           //ojo los change notifier solo se ejecuutan hasta que sea necesartia la instancia
           lazy: false, //ESTO ES PARA QUE SE LANCE EL CONSTRUCTOR DE INMEDIATO
           //ESTO ES UTIL PARA IR ADELANTANDO TAREAS ANTES DE QUE EL USUARIO LLEGUE A ELLAS
-          create: (_) => DiscoverProvider(videosRepository: videoPostRepository)
-            ..loadNextPage(), // operador de cascada
+          create: (_) =>
+              DiscoverProvider(localVideoServices: localVideoServices)
+                ..loadNextPage(), // operador de cascada
         )
       ],
       child: MaterialApp.router(
         title: 'TOKTIK',
         debugShowCheckedModeBanner: false,
         theme: AppTheme().gettheme(),
-        routerConfig: AppRouter.router,
+        routerConfig: appRouter,
       ),
     );
   }

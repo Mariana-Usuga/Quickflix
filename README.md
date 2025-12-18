@@ -1,4 +1,4 @@
-# mux_videos_app
+# Quickflix
 
 A new Flutter project.
 
