@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:quickflix/core/router/app_router.dart';
 import 'package:quickflix/models/video_post.dart';
 import 'package:quickflix/providers/discover_provider.dart';
 import 'package:quickflix/features/widgets/home/top_bar.dart';
 import 'package:quickflix/features/widgets/home/category_menu.dart';
 import 'package:quickflix/features/widgets/home/video_info_card.dart';
 import 'package:quickflix/features/widgets/home/video_section.dart';
-import 'package:quickflix/features/widgets/video/fullscreen_player.dart';
 import 'package:quickflix/features/widgets/video/video_background.dart';
 
 class HomeView extends StatefulWidget {
@@ -64,22 +62,22 @@ class _HomeViewState extends State<HomeView> {
                     screenHeight - safeAreaTop - safeAreaBottom;
 
                 return SizedBox(
-                  height: availableHeight * 0.75,
+                  height: availableHeight * 0.85,
                   child: Stack(
                     children: [
-                      // Video de fondo
-                      /*SizedBox.expand(
-                        child: FullScreenPlayer(
-                          videoUrl: 'assets/videos/8.mp4',
-                          caption: heroVideo.caption,
+                      // Imagen de fondo
+                      SizedBox.expand(
+                        child: Image.asset(
+                          'assets/background.png',
+                          fit: BoxFit.cover,
                         ),
-                      ),*/
+                      ),
 
                       // Overlay oscuro
-                      VideoBackground(
+                      /*VideoBackground(
                         colors: const [Colors.transparent, Colors.black87],
                         stops: const [0.0, 1.0],
-                      ),
+                      ),*/
 
                       // Contenido superpuesto
                       SafeArea(
@@ -109,7 +107,7 @@ class _HomeViewState extends State<HomeView> {
                                   totalVideos: 1,
                                   onPlayPressed: () {
                                     // Navegar a la pantalla de scroll vertical
-                                    //context.push(AppRouter.discover);
+                                    context.push('/discover');
                                   },
                                 ),
                               ),

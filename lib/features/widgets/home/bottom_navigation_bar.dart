@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:quickflix/features/search/delegates/search_movie_delegate.dart';
+import 'package:quickflix/services/local_video_services.dart';
+import 'package:quickflix/models/movie.dart';
 
 class CustomBottomNavigation extends StatelessWidget {
   final int currentIndex;
@@ -15,13 +17,15 @@ class CustomBottomNavigation extends StatelessWidget {
         break;
 
       case 1:
-        //final searchedMovies = ref.read(searchedMoviesProvider);
-        //final searchQuery = ref.read(searchQueryProvider);
         //delagate:se encarga de trabajar la busqueda
-        showSearch<dynamic>(
+        final localVideoServices = LocalVideoServices();
+        showSearch<Movie?>(
                 query: '',
                 context: context,
-                delegate: SearchMovieDelegate()) // dar la referencia
+                delegate: SearchMovieDelegate(
+                  searchMovies: localVideoServices.searchMoviesByQuery,
+                  initialMovies: const [],
+                )) // dar la referencia
             .then((movie) {
           if (movie == null) return;
           context.push('/home/0/movie/${movie.id}');

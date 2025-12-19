@@ -73,6 +73,7 @@ flutter:
     - assets/videos/
     - assets/logo.png
     - assets/clipsyLogo1.png
+    - assets/background.png
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see

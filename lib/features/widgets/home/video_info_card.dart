@@ -24,31 +24,6 @@ class VideoInfoCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Nombres de actores (simulado - puedes obtenerlo de la entidad si lo agregas)
-          const Text(
-            'Lily Collins • Sam Claflin',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-
-          const SizedBox(height: 4),
-
-          // Título del video
-          Text(
-            video.caption,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.5,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-
           const SizedBox(height: 8),
 
           // Etiquetas y vistas
@@ -99,9 +74,10 @@ class VideoInfoCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: onPlayPressed ?? () {
-                // Default action si no se proporciona callback
-              },
+              onPressed: onPlayPressed ??
+                  () {
+                    // Default action si no se proporciona callback
+                  },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: Colors.black,
@@ -174,4 +150,3 @@ class VideoInfoCard extends StatelessWidget {
     );
   }
 }
-
