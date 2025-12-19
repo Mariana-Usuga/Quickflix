@@ -46,6 +46,8 @@ dependencies:
   purchases_flutter: ^9.10.0
   flutter_bloc: ^9.1.1
   flutter_riverpod: ^3.0.3
+  google_fonts: ^6.3.3
+  card_swiper: ^3.0.1
 
 dev_dependencies:
   flutter_test:

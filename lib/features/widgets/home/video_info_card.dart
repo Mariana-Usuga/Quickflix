@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:quickflix/models/video_post.dart';
-import 'package:quickflix/core/utils/text_formatter.dart';
 
 class VideoInfoCard extends StatelessWidget {
   final VideoPost video;
@@ -22,43 +21,27 @@ class VideoInfoCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           const SizedBox(height: 8),
 
           // Etiquetas y vistas
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               _buildTag('New'),
               const SizedBox(width: 6),
               _buildTag('Romance'),
-              const Spacer(),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.play_circle_outline,
-                    color: Colors.white,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    '${TextFormatter.textReadeableNumber(video.views.toDouble())}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+              const SizedBox(width: 6),
+              _buildTag('50.7M'),
             ],
           ),
-
           const SizedBox(height: 8),
 
           // Descripción
           Text(
             'Two souls find solace in each other, unaware of the looming shadows threatening their newfound happiness. Will their love endure?',
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
               fontSize: 12,
@@ -69,39 +52,6 @@ class VideoInfoCard extends StatelessWidget {
           ),
 
           const SizedBox(height: 12),
-
-          // Botón Play
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onPlayPressed ??
-                  () {
-                    // Default action si no se proporciona callback
-                  },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.play_arrow, size: 22),
-                  SizedBox(width: 6),
-                  Text(
-                    'Play',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
 
           const SizedBox(height: 8),
 
@@ -132,12 +82,8 @@ class VideoInfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 1,
-        ),
+        color: const Color(0xFF2A2A2A), // Fondo #2A2A2A
+        borderRadius: BorderRadius.circular(5),
       ),
       child: Text(
         text,

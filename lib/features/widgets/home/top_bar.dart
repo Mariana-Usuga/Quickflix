@@ -14,11 +14,11 @@ class TopBar extends StatelessWidget {
 
     // Padding Horizontal:
     // Intenta ser el 5%, pero nunca menos de 15px ni más de 30px
-    final double horizontalPadding = (screenWidth * 0.03).clamp(15.0, 30.0);
+    final double horizontalPadding = (screenWidth * 0.02).clamp(15.0, 30.0);
 
     // Logo:
-    // Intenta ser el 12%, pero mantiene un rango entre 35px y 55px
-    final double logoSize = (screenWidth * 0.50).clamp(35.0, 55.0);
+    // Intenta ser el 60%, pero mantiene un rango entre 50px y 80px
+    final double logoSize = (screenWidth * 0.60).clamp(50.0, 80.0);
 
     // Iconos (Campana/Cartera):
     // Intenta ser el 7.5%, pero mantiene un rango entre 24px y 30px
@@ -38,7 +38,7 @@ class TopBar extends StatelessWidget {
       padding: EdgeInsets.only(
         left: horizontalPadding,
         right: horizontalPadding,
-        //top: 8,
+        top: 8,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -47,8 +47,8 @@ class TopBar extends StatelessWidget {
           // ------------------ LOGO ------------------
           Image.asset(
             'assets/clipsyLogo1.png',
-            width: logoSize,
-            height: logoSize,
+            //width: logoSize,
+            //height: logoSize,
             fit: BoxFit.contain,
           ),
 

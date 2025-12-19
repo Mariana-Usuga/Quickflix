@@ -4,7 +4,7 @@ import 'package:quickflix/models/movie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LocalVideoServices {
-  Future<List<VideoPost>> getTrendingVideosByPage(int page) async {
+  Future<List<VideoPost>>  getTrendingVideosByPage(int page) async {
     const int pageSize = 10; // Cantidad de videos por página
 
     try {
@@ -18,7 +18,7 @@ class LocalVideoServices {
 
       // Convertir los datos de Supabase a VideoPost
       final List<VideoPost> videos = (response as List)
-          .map((video) =>
+          .map((video) =>                      
               LocalVideoModel.fromJson(video as Map<String, dynamic>)
                   .toVideoPostEntity())
           .cast<VideoPost>()

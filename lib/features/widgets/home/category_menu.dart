@@ -36,10 +36,11 @@ class CategoryMenu extends StatelessWidget {
               onTap: () => onCategorySelected(category),
               child: isSelected
                   ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.grey[800],
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(5),
                       ),
                       child: Center(
                         child: Text(
@@ -53,7 +54,8 @@ class CategoryMenu extends StatelessWidget {
                       ),
                     )
                   : Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 8),
                       child: Center(
                         child: Text(
                           category,
@@ -72,4 +74,3 @@ class CategoryMenu extends StatelessWidget {
     );
   }
 }
-
