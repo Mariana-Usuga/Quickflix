@@ -8,6 +8,7 @@ class LocalVideoModel {
   final int views;
   final String gender;
   final int numberOfSeasons;
+  final String synopsis;
 
   LocalVideoModel({
     //este es el constructor
@@ -18,6 +19,7 @@ class LocalVideoModel {
     this.views = 0,
     required this.gender,
     required this.numberOfSeasons,
+    required this.synopsis,
   });
 
   factory LocalVideoModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class LocalVideoModel {
     final String? imageUrl = json['url_image'] as String?;
     final String? gender = json['gender'] as String?;
     final int? numberOfSeasons = json['number_of_seasons'] as int?;
+    final String? synopsis = json['synopsis'] as String?;
 
     return LocalVideoModel(
       name: title,
@@ -38,6 +41,7 @@ class LocalVideoModel {
       views: json['views'] ?? 0,
       gender: gender ?? '',
       numberOfSeasons: numberOfSeasons ?? 0,
+      synopsis: synopsis ?? '',
     );
   }
 
@@ -75,5 +79,6 @@ class LocalVideoModel {
         views: views,
         gender: gender,
         numberOfSeasons: numberOfSeasons,
+        synopsis: synopsis,
       );
 }

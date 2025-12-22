@@ -1,8 +1,11 @@
+import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:card_swiper/card_swiper.dart';
+import 'package:go_router/go_router.dart';
 // Asegúrate de importar tus widgets correctamente
 import 'package:quickflix/features/widgets/home/category_menu.dart';
 import 'package:quickflix/features/widgets/home/top_bar.dart';
+import 'package:quickflix/features/widgets/home/video_info_card.dart';
 import 'package:quickflix/models/video_post.dart';
 
 class MoviesSlideshow extends StatefulWidget {
@@ -17,10 +20,17 @@ class MoviesSlideshow extends StatefulWidget {
 class _MoviesSlideshowState extends State<MoviesSlideshow> {
   // 1. Movemos el estado aquí porque el menú ya no está en cada Slide
   String _selectedCategory = 'Popular';
+  final SwiperController _swiperController = SwiperController();
+  int _currentIndex = 0;
+
+  @override
+  void dispose() {
+    _swiperController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
     final screenHeight = MediaQuery.of(context).size.height;
     final safeAreaTop = MediaQuery.of(context).padding.top;
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
@@ -28,42 +38,54 @@ class _MoviesSlideshowState extends State<MoviesSlideshow> {
 
     return SizedBox(
       width: double.infinity,
-      height: double.infinity,
-      //height: availableHeight * 0.85,
-      //width: double.infinity,
+      height: availableHeight * 0.85,
       // 2. Usamos un STACK para superponer capas
       child: Stack(
         children: [
           // CAPA 1 (Fondo): El Carrusel (Swiper)
           Swiper(
+            controller: _swiperController,
             viewportFraction: 1.0,
-            // CAMBIO 3: scale a 1 para que no se reduzca el tamaño
-            scale: 1.0,
-            //viewportFraction: 0.8,
-            //scale: 0.9,
-            autoplay: false, // Lo desactivé para probar mejor
+            scale: 0.9,
+            //autoplay: true,
             pagination: SwiperPagination(
-              margin: const EdgeInsets.only(top: 0),
-              builder: DotSwiperPaginationBuilder(
-                  activeColor: colors.primary, color: colors.secondary),
+              builder: SwiperCustomPagination(
+                builder: (BuildContext context, SwiperPluginConfig config) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(config.itemCount, (index) {
+                      final bool isActive = index == config.activeIndex;
+
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        width: isActive ? 40.0 : 12.0,
+                        height: 5.0,
+                        decoration: BoxDecoration(
+                          color: isActive ? Colors.white : Colors.white24,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      );
+                    }),
+                  );
+                },
+              ),
             ),
+            onIndexChanged: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
             itemCount: widget.movies.length,
             itemBuilder: (context, index) =>
                 _Slide(movie: widget.movies[index]),
           ),
 
-          // CAPA 2 (Frente): Elementos Estáticos (TopBar y Menu)
-          // Usamos IgnorePointer si quieres que los clics pasen al swiper en las zonas vacías,
-          // pero como aquí hay botones, mejor usamos un Container o SafeArea directo.
           SafeArea(
             child: Column(
               children: [
-                // Barra superior fija
                 const TopBar(),
-
                 const SizedBox(height: 5),
-
-                // Menú de categorías fijo
                 CategoryMenu(
                   selectedCategory: _selectedCategory,
                   onCategorySelected: (category) {
@@ -93,28 +115,74 @@ class _Slide extends StatelessWidget {
       children: [
         // Imagen de fondo
         SizedBox.expand(
-          child: Image.asset(
-            'assets/background.png',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: const Color(0xFF121212),
-                child: const Center(
-                  child: Icon(Icons.image_not_supported, color: Colors.grey),
+          child: movie.imageUrl.isNotEmpty
+              ? Image.network(
+                  movie.imageUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    return FadeIn(child: child);
+                    /*if (loadingProgress == null) return child;
+                    return Container(
+                      color: const Color(0xFF121212),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                                  loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
+                      ),
+                    );*/
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      color: const Color(0xFF121212),
+                      child: const Center(
+                        child:
+                            Icon(Icons.image_not_supported, color: Colors.grey),
+                      ),
+                    );
+                  },
+                )
+              : Container(
+                  color: const Color(0xFF121212),
+                  child: const Center(
+                    child: Icon(Icons.image_not_supported, color: Colors.grey),
+                  ),
                 ),
-              );
-            },
-          ),
         ),
 
         // Gradiente inferior (Este sí se mueve con la imagen)
         const _CustomGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
-          stops: [0.0, 0.3],
+          stops: [0.0, 0.4],
           colors: [Color(0xFF121212), Colors.transparent],
         ),
 
+        const _CustomGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: [0.0, 0.3],
+          colors: [Color.fromARGB(255, 0, 0, 0), Colors.transparent],
+        ),
+
+        // VideoInfoCard posicionado en la parte inferior
+        Positioned(
+          //top: 80,
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: VideoInfoCard(
+            video: movie,
+            currentIndex: 0,
+            totalVideos: 1,
+            onPlayPressed: () {
+              // Navegar a la pantalla de scroll vertical
+              context.push('/discover');
+            },
+          ),
+        ),
         // Aquí iría la info de la película si quieres que se mueva con el slide
       ],
     );

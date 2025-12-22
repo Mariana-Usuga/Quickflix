@@ -15,6 +15,7 @@ class HomeScreen extends StatelessWidget {
     HomeView(),
     MyListItem(),
     ProfileScreen(),
+    ProfileScreen(),
     //PopularView(),
     //FavoritesView(),
   ];
@@ -25,6 +26,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true,
       body: IndexedStack(
         // para mantener el estado
         index: pageIndex,

@@ -47,7 +47,7 @@ class _MovieHorizontalListViewState extends State<MovieHorizontalListView> {
 
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 320,
+      height: 350,
       child: Column(children: [
         if (widget.title != null || widget.subTitle != null)
           _Title(title: widget.title, subTitle: widget.subTitle),
@@ -71,24 +71,33 @@ class _Slide extends StatelessWidget {
 
   const _Slide({required this.movie});
 
+  // Función helper para truncar texto a 15 caracteres
+  String _truncateText(String text, int maxLength) {
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return '${text.substring(0, maxLength)}...';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final textStyles = Theme.of(context).textTheme;
-
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 8),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           //* Imagen
           SizedBox(
             width: 150,
+            height: 220,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: Image.network(
                 movie.imageUrl,
                 fit: BoxFit.cover,
                 width: 150,
+                height: 220,
                 loadingBuilder: (context, child, loadingProgress) {
                   if (loadingProgress != null) {
                     return const Padding(
@@ -115,16 +124,19 @@ class _Slide extends StatelessWidget {
               color: Color(0xFFB3B3B3),
             ),
           ),
-          Text(
-            movie.caption,
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight:
-                  FontWeight.w500, // Bold porque en la imagen se ve grueso
-              color: Color(0xFFB3B3B3),
+          SizedBox(
+            width: 150,
+            child: Text(
+              _truncateText(movie.caption, 15),
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight:
+                    FontWeight.w500, // Bold porque en la imagen se ve grueso
+                color: Color(0xFFB3B3B3),
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 4),
           Container(
@@ -143,36 +155,6 @@ class _Slide extends StatelessWidget {
               ),
             ),
           ),
-          //* Title
-          /*SizedBox(
-            width: 150,
-            child: Text(
-              movie.caption,
-              maxLines: 2,
-              style: textStyles.titleSmall,
-            ),
-          ),*/
-
-          //* Rating
-          /*SizedBox(
-            width: 150,
-            child: Row(
-              children: [
-                Icon(Icons.star_half_outlined, color: Colors.yellow.shade800),
-                const SizedBox(width: 3),
-                Text('${movie.voteAverage}',
-                    style: textStyles.bodyMedium
-                        ?.copyWith(color: Colors.yellow.shade800)),
-                const Spacer(),
-                Text(
-                  HumanFormats.number(movie.popularity),
-                  style: textStyles.bodySmall?.copyWith(
-                    fontSize: 15.0,
-                  ),
-                ),
-              ],
-            ),
-          )*/
         ],
       ),
     );

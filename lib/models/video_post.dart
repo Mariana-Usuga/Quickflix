@@ -7,6 +7,7 @@ class VideoPost {
   final int views;
   final String gender;
   final int numberOfSeasons;
+  final String synopsis;
 
   VideoPost({
     required this.id,
@@ -17,5 +18,6 @@ class VideoPost {
     this.views = 0,
     required this.gender,
     required this.numberOfSeasons,
+    required this.synopsis,
   });
 }

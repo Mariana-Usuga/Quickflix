@@ -26,53 +26,40 @@ class VideoInfoCard extends StatelessWidget {
           const SizedBox(height: 8),
 
           // Etiquetas y vistas
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildTag('New'),
-              const SizedBox(width: 6),
-              _buildTag('Romance'),
-              const SizedBox(width: 6),
-              _buildTag('50.7M'),
-            ],
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildTag('New'),
+                const SizedBox(width: 6),
+                _buildTag(video.gender),
+                const SizedBox(width: 6),
+                _buildTag('50.7M'),
+              ],
+            ),
           ),
           const SizedBox(height: 8),
 
           // Descripción
-          Text(
-            'Two souls find solace in each other, unaware of the looming shadows threatening their newfound happiness. Will their love endure?',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 12,
-              height: 1.3,
+          Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            child: Text(
+              video.synopsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 12,
+                height: 1.3,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
           ),
 
           const SizedBox(height: 12),
 
           const SizedBox(height: 8),
-
-          // Indicadores de paginación
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              totalVideos > 5 ? 5 : totalVideos,
-              (index) => Container(
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                width: index == (currentIndex % 5) ? 28 : 18,
-                height: 3,
-                decoration: BoxDecoration(
-                  color: index == (currentIndex % 5)
-                      ? Colors.white
-                      : Colors.white.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
