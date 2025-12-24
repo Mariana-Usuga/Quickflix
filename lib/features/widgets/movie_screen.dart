@@ -1,7 +1,11 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
-import 'package:quickflix/models/movie.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:quickflix/cubit/movies_cubit.dart';
+import 'package:quickflix/features/widgets/home/movie_horizontal_listview.dart';
+import 'package:quickflix/models/video_post.dart';
 
 class MovieScreen extends StatefulWidget {
   static const name = 'movie-screen';
@@ -15,191 +19,511 @@ class MovieScreen extends StatefulWidget {
 }
 
 class MovieScreenState extends State<MovieScreen> {
-  Movie? movie;
-  bool isLoading = true;
+  //Movie? movie;;
   String? error;
 
   @override
   void initState() {
     super.initState();
-    _loadMovie();
-  }
-
-  Future<void> _loadMovie() async {
-    try {
-      final response = await Supabase.instance.client
-          .from('mux_videos')
-          .select()
-          .eq('id', int.parse(widget.movieId))
-          .single();
-
-      setState(() {
-        movie = Movie.fromContentAnalysis(response);
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        error = e.toString();
-        isLoading = false;
-      });
-    }
+    context.read<MoviesCubit>().getMovieById(int.parse(widget.movieId));
   }
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const Scaffold(
-          body: Center(child: CircularProgressIndicator(strokeWidth: 2)));
-    }
-
-    if (error != null || movie == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Error')),
-        body: Center(
-          child: Text(error ?? 'Película no encontrada'),
-        ),
-      );
-    }
+    final videosBloc = context.read<MoviesCubit>();
 
     return Scaffold(
-        body: CustomScrollView(
-      slivers: [
-        _CustomSliverAppBar(movie: movie!),
-        SliverList(
-            delegate: SliverChildBuilderDelegate(
-                (context, index) => _MovieDetails(movie: movie!),
-                childCount: 1))
-      ],
-    ));
+        body: BlocBuilder<MoviesCubit, MoviesState>(
+            bloc: videosBloc,
+            builder: (context, state) {
+              if (state.selectedMovie == null) {
+                return const Scaffold(
+                  body: Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                );
+              }
+
+              return CustomScrollView(
+                slivers: [
+                  _CustomSliverAppBar(movie: state.selectedMovie!),
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) =>
+                          _ContentDetails(movie: state.selectedMovie!),
+                      childCount: 1,
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 50),
+                      child: MovieHorizontalListView(
+                        movies: videosBloc.state.videos,
+                        title: 'You may also like',
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }));
   }
 }
 
-class _MovieDetails extends StatelessWidget {
-  final Movie movie;
+class _ContentDetails extends StatefulWidget {
+  final VideoPost movie;
 
-  const _MovieDetails({required this.movie});
+  const _ContentDetails({required this.movie});
+
+  @override
+  State<_ContentDetails> createState() => _ContentDetailsState();
+}
+
+class _ContentDetailsState extends State<_ContentDetails> {
+  int selectedSeason = 4;
+  int selectedEpisode = 1;
+  bool isSynopsisExpanded = false;
+
+  String _formatLikes(int likes) {
+    if (likes >= 1000) {
+      return '${(likes / 1000).toStringAsFixed(0)}k';
+    }
+    return likes.toString();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
     final textStyles = Theme.of(context).textTheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Imagen
-              ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: movie.posterPath.isNotEmpty
-                    ? Image.network(
-                        movie.posterPath,
-                        width: size.width * 0.3,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return SizedBox(
-                            width: size.width * 0.3,
-                            height: size.width * 0.45,
-                            child: const Center(
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2)),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: size.width * 0.3,
-                            height: size.width * 0.45,
-                            color: Colors.grey[800],
-                            child: const Icon(Icons.movie_outlined, size: 50),
-                          );
-                        },
-                      )
-                    : Container(
-                        width: size.width * 0.3,
-                        height: size.width * 0.45,
-                        color: Colors.grey[800],
-                        child: const Icon(Icons.movie_outlined, size: 50),
-                      ),
+    return Container(
+      //padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+      child: Column(
+        children: [
+          // Botones superiores: New, Romance, Play con views
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildTag('New'),
+                  const SizedBox(width: 6),
+                  _buildTag(widget.movie.gender),
+                  const SizedBox(width: 6),
+                  _buildTag('50.7M'),
+                ],
               ),
-              const SizedBox(width: 10),
-              // Descripción
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(movie.title, style: textStyles.titleLarge),
-                    const SizedBox(height: 8),
-                    if (movie.overview.isNotEmpty)
+
+              const SizedBox(height: 20),
+
+              // Botón grande "Jump Back In"
+              SizedBox(
+                width: 356,
+                child: ElevatedButton(
+                  onPressed: () => context.push('/home/0/movie/discover'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFB11226),
+                    foregroundColor: Colors.white,
+                    //padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.play_arrow, size: 28),
+                      SizedBox(width: 8),
                       Text(
-                        movie.overview,
-                        style: textStyles.bodyMedium,
-                      )
-                    else
-                      Text(
-                        'Sin descripción disponible',
-                        style: textStyles.bodyMedium?.copyWith(
-                          fontStyle: FontStyle.italic,
-                          color: Colors.grey,
+                        'Jump Back In',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight
+                              .w600, // Bold porque en la imagen se ve grueso
+                          color: const Color(0xFFF5F5F5),
                         ),
                       ),
-                    const SizedBox(height: 8),
-                    if (movie.voteAverage > 0)
-                      Row(
-                        children: [
-                          Icon(Icons.star_half_rounded,
-                              color: Colors.yellow.shade800),
-                          const SizedBox(width: 5),
-                          Text(
-                            movie.voteAverage.toStringAsFixed(1),
-                            style: textStyles.bodyMedium?.copyWith(
-                                color: Colors.yellow.shade900,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              )
-            ],
-          ),
-        ),
-        // Información adicional
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Fecha de creación: ${_formatDate(movie.releaseDate)}',
-                style: textStyles.bodySmall?.copyWith(color: Colors.grey),
-              ),
-              if (movie.originalLanguage.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    'Idioma: ${movie.originalLanguage.toUpperCase()}',
-                    style: textStyles.bodySmall?.copyWith(color: Colors.grey),
+                    ],
                   ),
                 ),
-            ],
+              ),
+              const SizedBox(height: 20),
+
+              // Métricas: Like, Bookmark, Share
+              SizedBox(
+                width: 182,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _MetricButton(
+                      icon: Icons.favorite_border_outlined,
+                      label: _formatLikes(widget.movie.likes),
+                    ),
+                    _MetricButton(
+                      icon: Icons.bookmark_border_outlined,
+                      label: '2,000',
+                    ),
+                    _MetricButton(
+                      icon: Icons.share,
+                      label: 'Share',
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Título
+              Text(
+                widget.movie.caption,
+                style: GoogleFonts.inter(
+                  fontSize: 17,
+                  fontWeight:
+                      FontWeight.w500, // Bold porque en la imagen se ve grueso
+                  color: const Color(0xFFF5F5F5),
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Sinopsis con botón "More"
+              _SynopsisText(
+                text: widget.movie.synopsis.isNotEmpty
+                    ? widget.movie.synopsis
+                    : 'Sin descripción disponible',
+                isExpanded: isSynopsisExpanded,
+                onTap: () {
+                  setState(() {
+                    isSynopsisExpanded = !isSynopsisExpanded;
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
+            ]),
           ),
-        ),
-        const SizedBox(height: 30),
-      ],
+
+          // Navegación de Temporadas
+          Container(
+            margin: const EdgeInsets.only(left: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (widget.movie.numberOfSeasons > 0) ...[
+                  SizedBox(
+                    height: 40,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: widget.movie.numberOfSeasons,
+                      itemBuilder: (context, index) {
+                        final seasonNumber =
+                            widget.movie.numberOfSeasons - index;
+                        final isSelected = seasonNumber == selectedSeason;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: _SeasonButton(
+                            label: 'Season $seasonNumber',
+                            isSelected: isSelected,
+                            onTap: () {
+                              setState(() {
+                                selectedSeason = seasonNumber;
+                                selectedEpisode = 1;
+                              });
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // Episodios
+                Text(
+                  'Episodes',
+                  style: textStyles.titleLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 60,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: 10, // Asumiendo 10 episodios por temporada
+                    itemBuilder: (context, index) {
+                      final episodeNumber = index + 1;
+                      final isSelected = episodeNumber == selectedEpisode;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: _EpisodeButton(
+                          number: episodeNumber,
+                          isSelected: isSelected,
+                          onTap: () {
+                            setState(() {
+                              selectedEpisode = episodeNumber;
+                            });
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          )
+        ],
+      ),
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+  Widget _buildTag(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2A2A2A), // Fondo #2A2A2A
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+class _MetricButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _MetricButton({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: Colors.white, size: 24),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight:
+                FontWeight.w500, // Bold porque en la imagen se ve grueso
+            color: const Color(0xFFF5F5F5),
+          ), /*TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+          ),*/
+        ),
+      ],
+    );
+  }
+}
+
+class _SynopsisText extends StatelessWidget {
+  final String text;
+  final bool isExpanded;
+  final VoidCallback onTap;
+
+  const _SynopsisText({
+    required this.text,
+    required this.isExpanded,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const maxLines = 3;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              fontWeight:
+                  FontWeight.w400, // Bold porque en la imagen se ve grueso
+              color: const Color(0xFFB3B3B3),
+            ),
+            /* textStyles.bodyMedium?.copyWith(
+              color: Colors.white70,
+              height: 1.5,
+            ),*/
+            maxLines: isExpanded ? null : maxLines,
+            overflow: isExpanded ? null : TextOverflow.ellipsis,
+          ),
+          if (text.length > 150)
+            TextButton(
+              onPressed: onTap,
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                isExpanded ? 'Less' : 'More',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight:
+                      FontWeight.w700, // Bold porque en la imagen se ve grueso
+                  color: const Color(0xFFF5F5F5),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SeasonButton extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SeasonButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+/**
+ * ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFB11226),
+                    foregroundColor: Colors.white,
+                    //padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.play_arrow, size: 28),
+                      SizedBox(width: 8),
+                      Text(
+                        'Jump Back In',
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight
+                              .w600, // Bold porque en la imagen se ve grueso
+                          color: const Color(0xFFF5F5F5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+ */
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            //height: 32,
+            //width: 112,
+            decoration: BoxDecoration(
+              color: isSelected ? Color(0xFF2A2A2A) : Colors.transparent,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight:
+                    FontWeight.w600, // Bold porque en la imagen se ve grueso
+                color: const Color(0xFFF5F5F5),
+              ),
+            ),
+          ),
+        ],
+      ), /*Container(
+        //padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        height: 32,
+        width: 112,
+        decoration: BoxDecoration(
+          color: isSelected ? Color(0xFF2A2A2A) : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 15,
+            fontWeight:
+                FontWeight.w600, // Bold porque en la imagen se ve grueso
+            color: const Color(0xFFF5F5F5),
+            //height: 22,
+          ), /*TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),*/
+        ),
+      ),*/
+    );
+  }
+}
+
+class _EpisodeButton extends StatelessWidget {
+  final int number;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _EpisodeButton({
+    required this.number,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 63,
+        height: 57,
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.red : Colors.grey[900],
+          //shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? Colors.red : Colors.transparent,
+            width: 2,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            number.toString(),
+            style: GoogleFonts.inter(
+              fontSize: 17,
+              fontWeight:
+                  FontWeight.w500, // Bold porque en la imagen se ve grueso
+              color: const Color(0xFFF5F5F5),
+            ), /*TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),*/
+          ),
+        ),
+      ),
+    );
   }
 }
 
 class _CustomSliverAppBar extends StatelessWidget {
-  final Movie movie;
+  final VideoPost movie;
 
   const _CustomSliverAppBar({required this.movie});
 
@@ -208,16 +532,15 @@ class _CustomSliverAppBar extends StatelessWidget {
     final size = MediaQuery.of(context).size;
 
     return SliverAppBar(
-      backgroundColor: Colors.black,
       expandedHeight: size.height * 0.7,
       foregroundColor: Colors.white,
       flexibleSpace: FlexibleSpaceBar(
           titlePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           background: Stack(children: [
             SizedBox.expand(
-              child: movie.posterPath.isNotEmpty
+              child: movie.imageUrl.isNotEmpty
                   ? Image.network(
-                      movie.posterPath,
+                      movie.imageUrl,
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress != null) {
@@ -245,28 +568,40 @@ class _CustomSliverAppBar extends StatelessWidget {
                     ),
             ),
             const _CustomGradient(
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-                stops: [
-                  0.0,
-                  0.2
-                ],
-                colors: [
-                  Colors.black54,
-                  Colors.transparent,
-                ]),
+              begin: Alignment.bottomCenter,
+              end: Alignment.topCenter,
+              stops: [0.0, 0.4],
+              colors: [Color(0xFF121212), Colors.transparent],
+            ),
             const _CustomGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: [0.8, 1.0],
-                colors: [Colors.transparent, Colors.black54]),
-            const _CustomGradient(begin: Alignment.topLeft, stops: [
-              0.0,
-              0.3
-            ], colors: [
-              Colors.black87,
-              Colors.transparent,
-            ]),
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: [0.0, 0.3],
+              colors: [Color.fromARGB(255, 0, 0, 0), Colors.transparent],
+            ),
+            /*const _CustomGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              stops: [0.0, 0.2],
+              colors: [
+                Colors.black54,
+                Colors.transparent,
+              ],
+            ),
+            const _CustomGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              stops: [0.8, 1.0],
+              colors: [Colors.transparent, Colors.black54],
+            ),
+            const _CustomGradient(
+              begin: Alignment.topLeft,
+              stops: [0.0, 0.3],
+              colors: [
+                Colors.black87,
+                Colors.transparent,
+              ],
+            ),*/
           ])),
     );
   }

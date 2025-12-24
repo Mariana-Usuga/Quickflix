@@ -1,5 +1,5 @@
 class VideoPost {
-  final String id;
+  final int id;
   final String caption;
   final String videoUrl;
   final String imageUrl;

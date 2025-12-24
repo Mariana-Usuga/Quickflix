@@ -1,3 +1,5 @@
+import 'package:quickflix/models/video_post.dart';
+
 class Movie {
   final String isarId; // you can also use id = null to auto increment
   final bool adult;
@@ -72,6 +74,29 @@ class Movie {
       video: true,
       voteAverage: 0.0, // content_analysis doesn't have vote average
       voteCount: 0,
+    );
+  }
+
+  // Factory method to create Movie from VideoPost
+  factory Movie.fromVideoPost(VideoPost videoPost) {
+    return Movie(
+      isarId: videoPost.id.toString(),
+      adult: false,
+      backdropPath: videoPost.imageUrl,
+      genreIds: const [],
+      id: videoPost.id,
+      originalLanguage: 'es',
+      originalTitle: videoPost.caption,
+      overview: videoPost.synopsis,
+      popularity: videoPost.views.toDouble(),
+      posterPath: videoPost.imageUrl,
+      releaseDate: DateTime.now(),
+      title: videoPost.caption,
+      video: true,
+      voteAverage: videoPost.likes > 0
+          ? (videoPost.likes / (videoPost.views > 0 ? videoPost.views : 1)) * 10
+          : 0.0,
+      voteCount: videoPost.likes,
     );
   }
 }

@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:quickflix/models/video_post.dart';
 
 class LocalVideoModel {
+  final int id;
   final String name;
   final String videoUrl;
   final String imageUrl;
@@ -12,6 +15,7 @@ class LocalVideoModel {
 
   LocalVideoModel({
     //este es el constructor
+    required this.id,
     required this.name,
     required this.videoUrl,
     required this.imageUrl,
@@ -24,6 +28,7 @@ class LocalVideoModel {
 
   factory LocalVideoModel.fromJson(Map<String, dynamic> json) {
     // Mapear campos de Supabase: title -> name, play_black_id -> videoUrl
+    final int id = json['id'] ?? 0;
     final String title = json['title'] ?? json['name'] ?? 'no name';
     final String? playBlackId = json['play_black_id'] as String?;
     final String? playbackId = json['playback_id'] as String?;
@@ -34,6 +39,7 @@ class LocalVideoModel {
     final String? synopsis = json['synopsis'] as String?;
 
     return LocalVideoModel(
+      id: id,
       name: title,
       videoUrl: videoUrl ?? _buildMuxVideoUrl(playBlackId ?? playbackId),
       imageUrl: _buildImageUrl(imageUrl),
@@ -71,7 +77,7 @@ class LocalVideoModel {
       };
 
   VideoPost toVideoPostEntity() => VideoPost(
-        id: '',
+        id: id,
         caption: name,
         videoUrl: videoUrl,
         imageUrl: imageUrl,

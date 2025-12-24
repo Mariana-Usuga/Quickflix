@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:quickflix/cubit/movies_cubit.dart';
 import 'package:quickflix/features/auth/cubit/auth_cubit.dart';
 import 'package:quickflix/services/local_video_services.dart';
 import 'package:provider/provider.dart';
@@ -16,15 +17,20 @@ void main() async {
 
   // Cargar variables de entorno desde el archivo .env
   await dotenv.load(fileName: '.env');
-  
+
   // Inicializar Supabase con las credenciales del archivo .env
   await SupabaseService.initialize(
-      url: dotenv.env['SUPABASE_URL'] ?? '',
+    url: dotenv.env['SUPABASE_URL'] ?? '',
     anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
-      runApp(MultiBlocProvider(providers: [
+  final localVideoServices = LocalVideoServices();
+
+  runApp(MultiBlocProvider(providers: [
     BlocProvider(create: (context) => AuthCubit(Supabase.instance.client)),
+    BlocProvider(
+        create: (context) =>
+            MoviesCubit(localVideoServices: localVideoServices)),
   ], child: const MyApp()));
 }
 
