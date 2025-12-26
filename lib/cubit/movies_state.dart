@@ -12,6 +12,7 @@ class MoviesState {
   final VideoPlayerController? videoController;
   final bool isVideoInitialized;
   final String? videoError;
+  final bool showVideoButtons;
 
   const MoviesState({
     this.videos = const [],
@@ -23,6 +24,7 @@ class MoviesState {
     this.videoController,
     this.isVideoInitialized = false,
     this.videoError,
+    this.showVideoButtons = false,
   });
 
   MoviesState copyWith({
@@ -35,6 +37,7 @@ class MoviesState {
     VideoPlayerController? videoController,
     bool? isVideoInitialized,
     String? videoError,
+    bool? showVideoButtons,
   }) {
     return MoviesState(
       videos: videos ?? this.videos,
@@ -46,6 +49,7 @@ class MoviesState {
       videoController: videoController ?? this.videoController,
       isVideoInitialized: isVideoInitialized ?? this.isVideoInitialized,
       videoError: videoError,
+      showVideoButtons: showVideoButtons ?? this.showVideoButtons,
     );
   }
 }

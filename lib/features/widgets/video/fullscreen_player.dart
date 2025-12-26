@@ -77,7 +77,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
         // ▶️ VIDEO
         return GestureDetector(
           onTap: () {
-            context.read<MoviesCubit>().togglePlay();
+            context.read<MoviesCubit>().toggleVideoButtons();
           },
           child: SizedBox.expand(
             child: FittedBox(

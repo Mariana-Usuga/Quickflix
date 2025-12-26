@@ -1,8 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:quickflix/models/video_post.dart';
 import 'package:quickflix/features/widgets/shared/video_buttons.dart';
 import 'package:quickflix/features/widgets/video/fullscreen_player.dart';
+import 'package:quickflix/cubit/movies_cubit.dart';
+import 'package:video_player/video_player.dart';
 
 class VideoScrollableView extends StatelessWidget {
   final List<VideoPost> videos;
@@ -27,16 +32,318 @@ class VideoScrollableView extends StatelessWidget {
             SizedBox.expand(
                 //esto es para asegurarnos de que el reproductor tome el tamaño de la pantalla
                 child: FullScreenPlayer(
-                  videoUrl: videoPost.videoUrl, 
-                  caption: videoPost.caption,)
-                  ),
+              videoUrl: videoPost.videoUrl,
+              caption: videoPost.caption,
+            )),
 
-            // botones
-            Positioned(
-                bottom: 40, right: 20, child: VideoButtons(video: videoPost))
+            // Icono de pause/play centrado y botones - se muestran/ocultan según el estado
+            BlocBuilder<MoviesCubit, MoviesState>(
+              builder: (context, state) {
+                if (!state.showVideoButtons) {
+                  return const SizedBox.shrink();
+                }
+
+                // Determinar si el video está reproduciendo
+                final isPlaying =
+                    state.videoController?.value.isPlaying ?? false;
+
+                return Stack(
+                  children: [
+                    // Gradiente oscuro en la parte inferior para el texto
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 200,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.bottomCenter,
+                            end: Alignment.topCenter,
+                            colors: [
+                              Colors.black.withOpacity(0.8),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Icono de pause/play centrado
+                    Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          context.read<MoviesCubit>().togglePlay();
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isPlaying ? Icons.pause : Icons.play_arrow,
+                            color: Colors.white,
+                            size: 48,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Botones de reacción (primero, a la derecha)
+                    Positioned(
+                      bottom: 40,
+                      right: 20,
+                      child: VideoButtons(video: videoPost),
+                    ),
+                    // Información del video (título y descripción) en la parte inferior izquierda
+                    Positioned(
+                      bottom: 40,
+                      left: 20,
+                      right:
+                          80, // Menos espacio para dar más ancho a _VideoInfo
+                      child: _VideoInfo(
+                        title: videoPost.caption,
+                        description: videoPost.synopsis,
+                        currentEpisode: index + 1,
+                        totalEpisodes: videos.length,
+                      ),
+                    ),
+                    // Barra de progreso (debajo de VideoButtons y _VideoInfo)
+                    Positioned(
+                      bottom: 20,
+                      left: 20,
+                      right: 20,
+                      child: state.videoController != null
+                          ? _VideoProgressBar(
+                              controller: state.videoController!,
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                );
+              },
+            ),
           ],
         );
       },
+    );
+  }
+}
+
+class _VideoInfo extends StatefulWidget {
+  final String title;
+  final String description;
+  final int currentEpisode;
+  final int totalEpisodes;
+
+  const _VideoInfo({
+    required this.title,
+    required this.description,
+    required this.currentEpisode,
+    required this.totalEpisodes,
+  });
+
+  @override
+  State<_VideoInfo> createState() => _VideoInfoState();
+}
+
+class _VideoInfoState extends State<_VideoInfo> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Título
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                widget.title,
+                style: GoogleFonts.inter(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFFF5F5F5),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.white,
+              size: 16,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Descripción con botón More/Less
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _isExpanded = !_isExpanded;
+            });
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.description.isNotEmpty
+                    ? widget.description
+                    : 'Sin descripción disponible',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.white.withOpacity(0.9),
+                  height: 1.4,
+                ),
+                maxLines: _isExpanded ? null : 2,
+                overflow: _isExpanded ? null : TextOverflow.ellipsis,
+              ),
+              if (widget.description.length > 100)
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _isExpanded = !_isExpanded;
+                    });
+                  },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    _isExpanded ? 'Less' : 'More...',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFFF5F5F5),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        // Indicador de episodio (EP.9 / 10) - debajo de la descripción
+        Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'EP.${widget.currentEpisode} / ${widget.totalEpisodes}',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.keyboard_arrow_up,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _VideoProgressBar extends StatefulWidget {
+  final VideoPlayerController controller;
+
+  const _VideoProgressBar({required this.controller});
+
+  @override
+  State<_VideoProgressBar> createState() => _VideoProgressBarState();
+}
+
+class _VideoProgressBarState extends State<_VideoProgressBar> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(_VideoProgressBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      _cancelTimer();
+      _startTimer();
+    }
+  }
+
+  @override
+  void dispose() {
+    _cancelTimer();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (mounted && widget.controller.value.isInitialized) {
+        setState(() {});
+      }
+    });
+  }
+
+  void _cancelTimer() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.controller.value.isInitialized) {
+      return const SizedBox.shrink();
+    }
+
+    final duration = widget.controller.value.duration;
+    final position = widget.controller.value.position;
+
+    if (duration.inMilliseconds == 0) {
+      return const SizedBox.shrink();
+    }
+
+    final progress = position.inMilliseconds / duration.inMilliseconds;
+
+    return Container(
+      height: 3,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(1.5),
+      ),
+      child: Stack(
+        children: [
+          // Fondo de la barra
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(1.5),
+            ),
+          ),
+          // Barra de progreso
+          FractionallySizedBox(
+            widthFactor: progress.clamp(0.0, 1.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(1.5),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -50,4 +357,3 @@ un state full si tiene un ciclo de vida
 inicia initstate
 
  */
-

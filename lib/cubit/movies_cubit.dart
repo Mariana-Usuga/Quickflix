@@ -52,6 +52,7 @@ class MoviesCubit extends Cubit<MoviesState> {
     emit(state.copyWith(
       isVideoInitialized: false,
       videoError: null,
+      showVideoButtons: false,
     ));
 
     try {
@@ -101,6 +102,10 @@ class MoviesCubit extends Cubit<MoviesState> {
     }
 
     emit(state.copyWith(videoController: _controller));
+  }
+
+  void toggleVideoButtons() {
+    emit(state.copyWith(showVideoButtons: !state.showVideoButtons));
   }
 
   Future<void> _disposeVideo() async {
