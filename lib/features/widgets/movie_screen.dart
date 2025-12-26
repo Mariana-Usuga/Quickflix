@@ -120,7 +120,7 @@ class _ContentDetailsState extends State<_ContentDetails> {
               SizedBox(
                 width: 356,
                 child: ElevatedButton(
-                  onPressed: () => context.push('/home/0/movie/discover'),
+                  onPressed: () => context.push('/home/0/discover'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFB11226),
                     foregroundColor: Colors.white,

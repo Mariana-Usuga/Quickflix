@@ -42,23 +42,11 @@ class MyApp extends StatelessWidget {
     //vamos a crear la instancia del repository y del data source
     final localVideoServices = LocalVideoServices();
 
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
-          //ojo los change notifier solo se ejecuutan hasta que sea necesartia la instancia
-          lazy: false, //ESTO ES PARA QUE SE LANCE EL CONSTRUCTOR DE INMEDIATO
-          //ESTO ES UTIL PARA IR ADELANTANDO TAREAS ANTES DE QUE EL USUARIO LLEGUE A ELLAS
-          create: (_) =>
-              DiscoverProvider(localVideoServices: localVideoServices)
-                ..loadNextPage(), // operador de cascada
-        )
-      ],
-      child: MaterialApp.router(
-        title: 'TOKTIK',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme().gettheme(),
-        routerConfig: appRouter,
-      ),
+    return MaterialApp.router(
+      title: 'TOKTIK',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme().gettheme(),
+      routerConfig: appRouter,
     );
   }
 }

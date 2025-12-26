@@ -1,4 +1,101 @@
-import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:quickflix/cubit/movies_cubit.dart';
+import 'package:video_player/video_player.dart';
+
+class FullScreenPlayer extends StatefulWidget {
+  final String videoUrl;
+  final String caption;
+
+  const FullScreenPlayer({
+    super.key,
+    required this.videoUrl,
+    required this.caption,
+  });
+
+  @override
+  State<FullScreenPlayer> createState() => _FullScreenPlayerState();
+}
+
+class _FullScreenPlayerState extends State<FullScreenPlayer> {
+  @override
+  void initState() {
+    // aqui vamos a inicializar el video
+    super.initState();
+    context.read<MoviesCubit>().initializeVideo(widget.videoUrl);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<MoviesCubit, MoviesState>(
+      builder: (context, state) {
+        // ❌ ERROR
+        if (state.videoError != null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.white,
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  state.videoError!,
+                  style: const TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    context
+                        .read<MoviesCubit>()
+                        .initializeVideo(widget.videoUrl);
+                  },
+                  child: const Text('Reintentar'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // ⏳ LOADING
+        if (!state.isVideoInitialized ||
+            state.videoController == null ||
+            !state.videoController!.value.isInitialized) {
+          return const Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.amber,
+            ),
+          );
+        }
+
+        final controller = state.videoController!;
+
+        // ▶️ VIDEO
+        return GestureDetector(
+          onTap: () {
+            context.read<MoviesCubit>().togglePlay();
+          },
+          child: SizedBox.expand(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: controller.value.size.width,
+                height: controller.value.size.height,
+                child: VideoPlayer(controller),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/*import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -224,7 +321,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
       ),
     );
   }
-}
+}*/
 
 
 /* NOTAS IMPORTANTES

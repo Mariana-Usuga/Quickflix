@@ -57,6 +57,7 @@ class LocalVideoModel {
       return '';
     }
     // Construir URL de Mux HLS
+    //https://stream.mux.com/005Rj02giEiz6vQZ9jJPTsDtK3KwKz00uoaPPHrUYgXppU.m3u8
     return 'https://stream.mux.com/$playbackId.m3u8';
   }
 

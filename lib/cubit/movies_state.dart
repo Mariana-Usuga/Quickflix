@@ -9,10 +9,9 @@ class MoviesState {
   final int limit;
   final int offset;
   final bool isLoading;
-  /*final bool loading;
-  final String? error;
-  final dynamic content;
-  final String? analysisId;*/
+  final VideoPlayerController? videoController;
+  final bool isVideoInitialized;
+  final String? videoError;
 
   const MoviesState({
     this.videos = const [],
@@ -21,6 +20,9 @@ class MoviesState {
     this.limit = 10,
     this.offset = 0,
     this.isLoading = false,
+    this.videoController,
+    this.isVideoInitialized = false,
+    this.videoError,
   });
 
   MoviesState copyWith({
@@ -30,6 +32,9 @@ class MoviesState {
     int? limit,
     int? offset,
     bool? isLoading,
+    VideoPlayerController? videoController,
+    bool? isVideoInitialized,
+    String? videoError,
   }) {
     return MoviesState(
       videos: videos ?? this.videos,
@@ -38,6 +43,9 @@ class MoviesState {
       limit: limit ?? this.limit,
       offset: offset ?? this.offset,
       isLoading: isLoading ?? this.isLoading,
+      videoController: videoController ?? this.videoController,
+      isVideoInitialized: isVideoInitialized ?? this.isVideoInitialized,
+      videoError: videoError,
     );
   }
 }
