@@ -2,14 +2,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:purchases_flutter/models/purchases_configuration.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:quickflix/cubit/movies_cubit.dart';
 import 'package:quickflix/features/auth/cubit/auth_cubit.dart';
 import 'package:quickflix/services/local_video_services.dart';
-import 'package:provider/provider.dart';
 import 'package:quickflix/core/services/supabase_service.dart';
 import 'package:quickflix/core/router/app_router.dart';
 import 'package:quickflix/core/theme/app_theme.dart';
-import 'package:quickflix/providers/discover_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
@@ -25,7 +25,7 @@ void main() async {
   );
 
   final localVideoServices = LocalVideoServices();
-
+  await initRevenueCat();
   runApp(MultiBlocProvider(providers: [
     BlocProvider(create: (context) => AuthCubit(Supabase.instance.client)),
     BlocProvider(
@@ -39,9 +39,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    //vamos a crear la instancia del repository y del data source
-    final localVideoServices = LocalVideoServices();
-
     return MaterialApp.router(
       title: 'TOKTIK',
       debugShowCheckedModeBanner: false,
@@ -49,6 +46,16 @@ class MyApp extends StatelessWidget {
       routerConfig: appRouter,
     );
   }
+}
+
+Future<void> initRevenueCat() async {
+  await Purchases.setLogLevel(LogLevel.debug);
+
+  await Purchases.configure(
+    PurchasesConfiguration(
+      'test_kNWInuFSAQtMMtSVNdMaVFNsOfk', // ← la key de RevenueCat
+    ),
+  );
 }
 
 /*TEORIA

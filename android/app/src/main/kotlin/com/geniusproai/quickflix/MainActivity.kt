@@ -1,4 +1,4 @@
-package com.quickflix
+package com.geniusproai.quickflix
 
 import io.flutter.embedding.android.FlutterActivity
 
