@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:quickflix/core/router/app_router.dart';
-import 'package:quickflix/features/widgets/home/bottom_navigation_bar.dart';
 import 'package:quickflix/features/widgets/my_list/my_list_item.dart';
 
 class MyListScreen extends StatefulWidget {

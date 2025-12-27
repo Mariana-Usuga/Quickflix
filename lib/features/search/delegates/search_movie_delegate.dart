@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'package:quickflix/models/movie.dart';
 
@@ -21,7 +22,7 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
 
   SearchMovieDelegate({required this.searchMovies, required this.initialMovies})
       : super(
-          searchFieldLabel: 'Buscar pelicula',
+          searchFieldLabel: 'Search',
         );
 
   void clearStreams() {
@@ -142,67 +143,127 @@ class _MovieItem extends StatelessWidget {
 
   const _MovieItem({required this.movie, required this.onMovieSelected});
 
+  String _formatViews(double views) {
+    if (views >= 1000000) {
+      return '${(views / 1000000).toStringAsFixed(1)}M';
+    } else if (views >= 1000) {
+      return '${(views / 1000).toStringAsFixed(1)}k';
+    }
+    return views.toStringAsFixed(0);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final textStyles = Theme.of(context).textTheme;
-    final size = MediaQuery.of(context).size;
-
     return GestureDetector(
       onTap: () {
         onMovieSelected(context, movie);
       },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      child: Container(
+        color: Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Image
-            SizedBox(
-              width: size.width * 0.2,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: movie.posterPath.isNotEmpty
-                    ? Image.network(movie.posterPath,
-                        loadingBuilder: (context, child, loadingProgress) {
-                        return FadeIn(child: child);
-                      }, errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[800],
-                          child: const Icon(Icons.movie_outlined),
-                        );
-                      })
-                    : Container(
-                        color: Colors.grey[800],
-                        child: const Icon(Icons.movie_outlined),
+            // Imagen vertical/portrait a la izquierda
+            ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: // movie.posterPath.isNotEmpty
+                    Image.network(
+                  movie.posterPath,
+                  width: 120,
+                  height: 160,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    return FadeIn(child: child);
+                  },
+                )),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Container(
+                alignment: Alignment.topLeft,
+                //margin: const EdgeInsets.only(top: 30),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // "4 Seasons" en gris claro arriba
+                    Text(
+                      '4 Seasons', // Valor por defecto, puedes ajustarlo según tus datos
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFFB3B3B3),
                       ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            // Description
-            SizedBox(
-              width: size.width * 0.7,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(movie.title, style: textStyles.titleMedium),
-                  if (movie.overview.isNotEmpty)
-                    (movie.overview.length > 100)
-                        ? Text('${movie.overview.substring(0, 100)}...')
-                        : Text(movie.overview),
-                  if (movie.voteAverage > 0)
+                    ),
+                    SizedBox(height: 5),
+                    // Título y bookmark icon
+                    Container(
+                      alignment: Alignment.topLeft,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            movie.title,
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                            //maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2A2A2A), // Fondo #2A2A2A
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(
+                              'Romance',
+                              style: const TextStyle(
+                                color: Color(0xFFB3B3B3),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
                     Row(
                       children: [
-                        Icon(Icons.star_half_rounded,
-                            color: Colors.yellow.shade800),
-                        const SizedBox(width: 5),
+                        const Icon(
+                          Icons.play_arrow,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 4),
                         Text(
-                          movie.voteAverage.toStringAsFixed(1),
-                          style: textStyles.bodyMedium!
-                              .copyWith(color: Colors.yellow.shade900),
+                          '${_formatViews(movie.popularity)}',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.white,
+                          ),
                         ),
                       ],
-                    )
-                ],
+                    ),
+                  ],
+                ),
               ),
+            ),
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(
+                Icons.bookmark_border,
+                color: Colors.white,
+                size: 24,
+              ),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
             ),
           ],
         ),

@@ -36,7 +36,7 @@ class CustomBottomNavigation extends StatelessWidget {
         context.go('/home/2');
         break;
       case 3:
-        context.go('/home/2'); // Perfil
+        context.go('/home/3'); // Perfil
         break;
     }
   }
