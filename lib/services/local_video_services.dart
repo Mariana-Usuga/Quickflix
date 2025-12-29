@@ -67,9 +67,11 @@ class LocalVideoServices {
   Future<List<Episode>> getEpisodesByTitleId(int titleId) async {
     try {
       // Obtener episodios de Supabase filtrados por title_id
-      final response = await Supabase.instance.client.from('episodes').select()
-      .eq('title_id', titleId)
-      .order('episode_number', ascending: true);
+      final response = await Supabase.instance.client
+          .from('episodes')
+          .select()
+          .eq('title_id', titleId)
+          .order('episode_number', ascending: true);
 
       // Convertir los datos de Supabase a Episode
       final List<Episode> episodes = (response as List)

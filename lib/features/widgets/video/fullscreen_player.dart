@@ -18,11 +18,25 @@ class FullScreenPlayer extends StatefulWidget {
 }
 
 class _FullScreenPlayerState extends State<FullScreenPlayer> {
+  String? _lastVideoUrl;
+
   @override
   void initState() {
     // aqui vamos a inicializar el video
     super.initState();
+    _lastVideoUrl = widget.videoUrl;
     context.read<MoviesCubit>().initializeVideo(widget.videoUrl);
+  }
+
+  @override
+  void didUpdateWidget(FullScreenPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Si cambió la URL del video, reinicializar
+    if (oldWidget.videoUrl != widget.videoUrl &&
+        widget.videoUrl != _lastVideoUrl) {
+      _lastVideoUrl = widget.videoUrl;
+      context.read<MoviesCubit>().initializeVideo(widget.videoUrl);
+    }
   }
 
   @override
@@ -60,16 +74,11 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
           );
         }
 
-        // ⏳ LOADING
+        // Mostrar nada (fondo transparente) mientras carga - tipo TikTok
         if (!state.isVideoInitialized ||
             state.videoController == null ||
             !state.videoController!.value.isInitialized) {
-          return const Center(
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Colors.amber,
-            ),
-          );
+          return const SizedBox.shrink();
         }
 
         final controller = state.videoController!;

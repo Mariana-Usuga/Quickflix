@@ -9,6 +9,8 @@ part 'movies_state.dart';
 class MoviesCubit extends Cubit<MoviesState> {
   final LocalVideoServices localVideoServices;
   VideoPlayerController? _controller;
+  final Map<String, VideoPlayerController> _controllerCache = {};
+  String? _currentVideoUrl;
 
   MoviesCubit({required this.localVideoServices}) : super(const MoviesState());
 
@@ -82,8 +84,31 @@ class MoviesCubit extends Cubit<MoviesState> {
     ));
 
     try {
-      await _disposeVideo();
+      // Pausar el controller anterior si existe y es diferente del nuevo
+      if (_controller != null && _controller != _controllerCache[videoUrl]) {
+        _controller!.pause();
+      }
 
+      // Si el video ya está en cache, usarlo directamente
+      if (_controllerCache.containsKey(videoUrl)) {
+        final cachedController = _controllerCache[videoUrl]!;
+        if (cachedController.value.isInitialized) {
+          _controller = cachedController;
+          _currentVideoUrl = videoUrl;
+          _controller!
+            ..setVolume(0)
+            ..setLooping(true)
+            ..play();
+          emit(state.copyWith(
+            videoController: _controller,
+            isVideoInitialized: true,
+          ));
+          return;
+        }
+      }
+
+      // Si no está en cache, crear nuevo controller
+      VideoPlayerController newController;
       if (videoUrl.isEmpty) {
         emit(state.copyWith(
           videoError: 'URL del video vacía',
@@ -92,14 +117,21 @@ class MoviesCubit extends Cubit<MoviesState> {
       }
 
       if (videoUrl.startsWith('http')) {
-        _controller = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
+        newController = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
       } else {
-        _controller = VideoPlayerController.asset(videoUrl);
+        newController = VideoPlayerController.asset(videoUrl);
       }
 
-      await _controller!.initialize().timeout(
+      await newController.initialize().timeout(
             const Duration(seconds: 30),
           );
+
+      _controller = newController;
+      _currentVideoUrl = videoUrl;
+      _controllerCache[videoUrl] = newController;
+
+      // Limpiar controllers antiguos del cache (mantener solo actual + siguiente + anterior)
+      _cleanupOldControllers();
 
       _controller!
         ..setVolume(0)
@@ -115,6 +147,74 @@ class MoviesCubit extends Cubit<MoviesState> {
         videoError: e.toString(),
         isVideoInitialized: false,
       ));
+    }
+  }
+
+  /// Pre-carga un video sin activarlo
+  Future<void> preloadVideo(String videoUrl) async {
+    // Si ya está en cache y está inicializado, no hacer nada
+    if (_controllerCache.containsKey(videoUrl)) {
+      final cachedController = _controllerCache[videoUrl]!;
+      if (cachedController.value.isInitialized) {
+        return;
+      }
+    }
+
+    // Si es el video actual, no pre-cargar
+    if (videoUrl == _currentVideoUrl) {
+      return;
+    }
+
+    try {
+      if (videoUrl.isEmpty) return;
+
+      VideoPlayerController newController;
+      if (videoUrl.startsWith('http')) {
+        newController = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
+      } else {
+        newController = VideoPlayerController.asset(videoUrl);
+      }
+
+      await newController.initialize().timeout(
+            const Duration(seconds: 30),
+          );
+
+      // Guardar en cache sin reproducir
+      _controllerCache[videoUrl] = newController;
+      newController.setVolume(0);
+      newController.setLooping(true);
+
+      // Limpiar controllers antiguos del cache
+      _cleanupOldControllers();
+    } catch (e) {
+      // Silenciar errores de pre-carga
+      print('Error pre-cargando video: $e');
+    }
+  }
+
+  /// Obtiene el controller para un video del cache
+  VideoPlayerController? getControllerForVideo(String videoUrl) {
+    return _controllerCache[videoUrl];
+  }
+
+  /// Limpia controllers antiguos del cache, manteniendo solo los necesarios
+  void _cleanupOldControllers() {
+    // Mantener máximo 3 videos en cache (actual + siguiente + anterior)
+    // Por ahora, mantenemos todos en cache y solo limpiamos cuando hay muchos
+    if (_controllerCache.length > 5) {
+      // Encontrar y eliminar el controller más antiguo que no sea el actual
+      String? oldestKey;
+      for (final key in _controllerCache.keys) {
+        if (key != _currentVideoUrl) {
+          oldestKey = key;
+          break;
+        }
+      }
+
+      if (oldestKey != null) {
+        final controllerToRemove = _controllerCache.remove(oldestKey);
+        controllerToRemove?.dispose();
+      }
     }
   }
 
@@ -134,16 +234,16 @@ class MoviesCubit extends Cubit<MoviesState> {
     emit(state.copyWith(showVideoButtons: !state.showVideoButtons));
   }
 
-  Future<void> _disposeVideo() async {
-    try {
-      await _controller?.dispose();
-    } catch (_) {}
-    _controller = null;
-  }
-
   @override
   Future<void> close() async {
-    await _disposeVideo();
+    // Limpiar todos los controllers del cache
+    for (final controller in _controllerCache.values) {
+      try {
+        await controller.dispose();
+      } catch (_) {}
+    }
+    _controllerCache.clear();
+    _controller = null;
     return super.close();
   }
 }

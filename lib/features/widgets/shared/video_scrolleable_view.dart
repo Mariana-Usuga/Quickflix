@@ -8,28 +8,68 @@ import 'package:quickflix/features/widgets/video/fullscreen_player.dart';
 import 'package:quickflix/cubit/movies_cubit.dart';
 import 'package:video_player/video_player.dart';
 
-class VideoScrollableView extends StatelessWidget {
+class VideoScrollableView extends StatefulWidget {
   final List<Episode> videos;
 
   const VideoScrollableView({super.key, required this.videos});
 
   @override
+  State<VideoScrollableView> createState() => _VideoScrollableViewState();
+}
+
+class _VideoScrollableViewState extends State<VideoScrollableView> {
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+    // Pre-cargar el primer video y el siguiente
+    _preloadAdjacentVideos(0);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _preloadAdjacentVideos(int currentIndex) {
+    final cubit = context.read<MoviesCubit>();
+
+    // Pre-cargar siguiente video
+    if (currentIndex + 1 < widget.videos.length) {
+      final nextVideo = widget.videos[currentIndex + 1];
+      cubit.preloadVideo(nextVideo.episodeUrl);
+    }
+
+    // Pre-cargar video anterior
+    if (currentIndex - 1 >= 0) {
+      final previousVideo = widget.videos[currentIndex - 1];
+      cubit.preloadVideo(previousVideo.episodeUrl);
+    }
+  }
+
+  void _onPageChanged(int index) {
+    // Pre-cargar videos adyacentes cuando cambia la página
+    _preloadAdjacentVideos(index);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return PageView.builder(
-      //este widget nos permite hacer un scroll a pantalla completa es como dezplaxzarse entre pantallas
+      controller: _pageController,
       scrollDirection: Axis.vertical,
       physics: BouncingScrollPhysics(),
-      itemCount: videos
-          .length, // para que se pueda desplazar por defecto esta propiedads lo permite
+      onPageChanged: _onPageChanged,
+      itemCount: widget.videos.length,
       itemBuilder: (context, index) {
-        final Episode videoPost = videos[index];
+        final Episode videoPost = widget.videos[index];
 
         return Stack(
-          //el stack es un widget que permite superponer unos sobre otros
           children: [
             //video player + gradientes
             SizedBox.expand(
-                //esto es para asegurarnos de que el reproductor tome el tamaño de la pantalla
                 child: FullScreenPlayer(
               videoUrl: videoPost.episodeUrl,
               caption: videoPost.episodeNumber.toString(),
@@ -104,8 +144,8 @@ class VideoScrollableView extends StatelessWidget {
                         title: 'Flash Marrige ${videoPost.episodeNumber}',
                         description:
                             'A flash marriage" synopsis typically involves a fast, often unexpected marriage between strangers or acquaintances, common in Chinese web novels and dramas like Flash Marriage: The Big Shots Pampered Wife, where a heroine (like Bella) enters a contract marriage with a powerful CEO (Jesse) for convenience (revenge, family, business), only for genuine romance to blossom amidst corporate rivals and challenges, turning their fake union into real love',
-                        currentEpisode: index + 1,
-                        totalEpisodes: videos.length,
+                        currentEpisode: 11,
+                        totalEpisodes: videoPost.episodeNumber,
                       ),
                     ),
                     // Barra de progreso (debajo de VideoButtons y _VideoInfo)
