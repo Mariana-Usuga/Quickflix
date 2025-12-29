@@ -1,12 +1,13 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:quickflix/models/episodes.dart';
 import 'package:quickflix/models/video_post.dart';
 
 import '../../../core/utils/text_formatter.dart';
 
 class VideoButtons extends StatelessWidget {
-  final VideoPost video;
+  final Episode video;
 
   const VideoButtons({super.key, required this.video});
 
@@ -15,13 +16,13 @@ class VideoButtons extends StatelessWidget {
     return Column(
       children: [
         _CustomIconButton(
-          value: video.likes,
+          value: 4,//video.likes,
           color: Colors.red,
           iconData: Icons.favorite,
         ),
         const SizedBox(height: 20),
         _CustomIconButton(
-          value: video.likes,
+          value: 4,//video.likes,
           iconData: Icons.remove_red_eye_outlined,
         ),
         const SizedBox(height: 20),

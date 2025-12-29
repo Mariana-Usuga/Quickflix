@@ -1,6 +1,8 @@
 import 'package:quickflix/models/local_video_model.dart';
 import 'package:quickflix/models/video_post.dart';
 import 'package:quickflix/models/movie.dart';
+import 'package:quickflix/models/episodes.dart';
+import 'package:quickflix/models/episode_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LocalVideoServices {
@@ -59,6 +61,29 @@ class LocalVideoServices {
       print('Error al buscar películas en Supabase: $e');
       print('Stack trace: $stackTrace');
       throw Exception('Error al buscar películas en Supabase: $e');
+    }
+  }
+
+  Future<List<Episode>> getEpisodesByTitleId(int titleId) async {
+    try {
+      // Obtener episodios de Supabase filtrados por title_id
+      final response = await Supabase.instance.client.from('episodes').select()
+      .eq('title_id', titleId)
+      .order('episode_number', ascending: true);
+
+      // Convertir los datos de Supabase a Episode
+      final List<Episode> episodes = (response as List)
+          .map((episode) =>
+              EpisodeModel.fromJson(episode as Map<String, dynamic>)
+                  .toEpisodeEntity())
+          .toList();
+
+      return episodes;
+    } catch (e, stackTrace) {
+      // Imprimir error completo para debugging
+      print('Error al obtener episodios de Supabase: $e');
+      print('Stack trace: $stackTrace');
+      throw Exception('Error al obtener episodios de Supabase: $e');
     }
   }
 }

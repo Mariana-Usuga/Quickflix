@@ -32,7 +32,29 @@ class MoviesCubit extends Cubit<MoviesState> {
     ));
   }
 
-  void loadEpisodes(dynamic content) async {
+  Future<void> loadEpisodes(int titleId) async {
+    try {
+      emit(state.copyWith(isLoading: true));
+
+      final newEpisodes =
+          await localVideoServices.getEpisodesByTitleId(titleId);
+
+      final orderedEpisodes = [
+        ...state.episodes,
+        ...newEpisodes,
+      ]..sort((a, b) => a.episodeNumber.compareTo(b.episodeNumber));
+
+      emit(state.copyWith(
+        episodes: orderedEpisodes,
+        isLoading: false,
+      ));
+    } catch (e) {
+      print('Error al cargar episodios: $e');
+      emit(state.copyWith(
+        isLoading: false,
+        episodes: [],
+      ));
+    }
   }
 
   void reset() {

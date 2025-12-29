@@ -2,14 +2,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:quickflix/models/video_post.dart';
+import 'package:quickflix/models/episodes.dart';
 import 'package:quickflix/features/widgets/shared/video_buttons.dart';
 import 'package:quickflix/features/widgets/video/fullscreen_player.dart';
 import 'package:quickflix/cubit/movies_cubit.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoScrollableView extends StatelessWidget {
-  final List<VideoPost> videos;
+  final List<Episode> videos;
 
   const VideoScrollableView({super.key, required this.videos});
 
@@ -22,7 +22,7 @@ class VideoScrollableView extends StatelessWidget {
       itemCount: videos
           .length, // para que se pueda desplazar por defecto esta propiedads lo permite
       itemBuilder: (context, index) {
-        final VideoPost videoPost = videos[index];
+        final Episode videoPost = videos[index];
 
         return Stack(
           //el stack es un widget que permite superponer unos sobre otros
@@ -31,8 +31,8 @@ class VideoScrollableView extends StatelessWidget {
             SizedBox.expand(
                 //esto es para asegurarnos de que el reproductor tome el tamaño de la pantalla
                 child: FullScreenPlayer(
-              videoUrl: videoPost.videoUrl,
-              caption: videoPost.caption,
+              videoUrl: videoPost.episodeUrl,
+              caption: videoPost.episodeNumber.toString(),
             )),
 
             // Icono de pause/play centrado y botones - se muestran/ocultan según el estado
@@ -101,8 +101,9 @@ class VideoScrollableView extends StatelessWidget {
                       right:
                           80, // Menos espacio para dar más ancho a _VideoInfo
                       child: _VideoInfo(
-                        title: videoPost.caption,
-                        description: videoPost.synopsis,
+                        title: 'Flash Marrige ${videoPost.episodeNumber}',
+                        description:
+                            'A flash marriage" synopsis typically involves a fast, often unexpected marriage between strangers or acquaintances, common in Chinese web novels and dramas like Flash Marriage: The Big Shots Pampered Wife, where a heroine (like Bella) enters a contract marriage with a powerful CEO (Jesse) for convenience (revenge, family, business), only for genuine romance to blossom amidst corporate rivals and challenges, turning their fake union into real love',
                         currentEpisode: index + 1,
                         totalEpisodes: videos.length,
                       ),

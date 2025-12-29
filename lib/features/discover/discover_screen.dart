@@ -3,19 +3,38 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:quickflix/cubit/movies_cubit.dart';
 import 'package:quickflix/features/widgets/shared/video_scrolleable_view.dart';
 
-class DiscoverScreen extends StatelessWidget {
+class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final videosBloc = context.read<MoviesCubit>();
+  State<DiscoverScreen> createState() => _DiscoverScreenState();
+}
 
+class _DiscoverScreenState extends State<DiscoverScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final cubit = context.read<MoviesCubit>();
+      if (cubit.state.episodes.isEmpty) {
+        cubit.loadEpisodes(3);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-        /*body: discoverProvider.initialLoading
-            ? const Center(
-                child: CircularProgressIndicator(),
-              )
-            :*/
-        body: VideoScrollableView(videos: videosBloc.state.videos));
+      body: BlocBuilder<MoviesCubit, MoviesState>(
+        builder: (context, state) {
+          /*if (state.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }*/
+
+          return VideoScrollableView(videos: state.episodes);
+        },
+      ),
+    );
   }
 }
