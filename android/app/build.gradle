@@ -22,16 +22,8 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
-/* ================================
-   🔐 KEYSTORE CONFIG
-================================ */
-def keystoreProperties = new Properties()
-def keystorePropertiesFile = rootProject.file('key.properties')
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-}
-
 android {
+    // Se mantiene tu namespace original
     namespace "com.geniusproai.quickflix"
     compileSdk flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
@@ -50,6 +42,7 @@ android {
     }
 
     defaultConfig {
+        // Se mantiene tu applicationId original
         applicationId "com.geniusproai.quickflix"
         minSdkVersion flutter.minSdkVersion
         targetSdkVersion flutter.targetSdkVersion
@@ -57,21 +50,10 @@ android {
         versionName flutterVersionName
     }
 
-    /* ================================
-       🔏 SIGNING CONFIG
-    ================================ */
-    signingConfigs {
-        release {
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            storeFile file(keystoreProperties['storeFile'])
-            storePassword keystoreProperties['storePassword']
-        }
-    }
-
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            // Se cambió para usar la firma de debug y evitar errores de compilación
+            signingConfig signingConfigs.debug
             minifyEnabled false
             shrinkResources false
         }
