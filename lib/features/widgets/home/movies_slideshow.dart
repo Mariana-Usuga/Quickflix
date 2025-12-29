@@ -7,6 +7,7 @@ import 'package:quickflix/features/widgets/home/category_menu.dart';
 import 'package:quickflix/features/widgets/home/top_bar.dart';
 import 'package:quickflix/features/widgets/home/video_info_card.dart';
 import 'package:quickflix/features/widgets/home/quick_refills_widget.dart';
+import 'package:quickflix/features/widgets/shared/custom_gradient.dart';
 import 'package:quickflix/models/video_post.dart';
 
 class MoviesSlideshow extends StatefulWidget {
@@ -100,8 +101,6 @@ class _MoviesSlideshowState extends State<MoviesSlideshow> {
             ],
           ),
         ),
-        // Widget de Quick Refills debajo del Swiper
-        const QuickRefillsWidget(),
       ],
     );
   }
@@ -157,14 +156,14 @@ class _Slide extends StatelessWidget {
         ),
 
         // Gradiente inferior (Este sí se mueve con la imagen)
-        const _CustomGradient(
+        const CustomGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
           stops: [0.0, 0.4],
           colors: [Color(0xFF121212), Colors.transparent],
         ),
 
-        const _CustomGradient(
+        const CustomGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           stops: [0.0, 0.3],
@@ -193,28 +192,6 @@ class _Slide extends StatelessWidget {
   }
 }
 
-class _CustomGradient extends StatelessWidget {
-  final AlignmentGeometry begin;
-  final AlignmentGeometry end;
-  final List<double> stops;
-  final List<Color> colors;
-
-  const _CustomGradient(
-      {this.begin = Alignment.centerLeft,
-      this.end = Alignment.centerRight,
-      required this.stops,
-      required this.colors});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox.expand(
-      child: DecoratedBox(
-          decoration: BoxDecoration(
-              gradient: LinearGradient(
-                  begin: begin, end: end, stops: stops, colors: colors))),
-    );
-  }
-}
 //import 'package:animate_do/animate_do.dart';
 /*import 'package:flutter/material.dart';
 import 'package:card_swiper/card_swiper.dart';

@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:quickflix/models/episodes.dart';
 import 'package:quickflix/features/widgets/shared/video_buttons.dart';
 import 'package:quickflix/features/widgets/video/fullscreen_player.dart';
+import 'package:quickflix/features/widgets/home/quick_refills_widget.dart';
 import 'package:quickflix/cubit/movies_cubit.dart';
 import 'package:video_player/video_player.dart';
 
@@ -19,13 +21,12 @@ class VideoScrollableView extends StatefulWidget {
 
 class _VideoScrollableViewState extends State<VideoScrollableView> {
   late PageController _pageController;
+  bool _isModalVisible = false;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
-    // Pre-cargar el primer video y el siguiente
-    _preloadAdjacentVideos(0);
   }
 
   @override
@@ -34,25 +35,17 @@ class _VideoScrollableViewState extends State<VideoScrollableView> {
     super.dispose();
   }
 
-  void _preloadAdjacentVideos(int currentIndex) {
-    final cubit = context.read<MoviesCubit>();
-
-    // Pre-cargar siguiente video
-    if (currentIndex + 1 < widget.videos.length) {
-      final nextVideo = widget.videos[currentIndex + 1];
-      cubit.preloadVideo(nextVideo.episodeUrl);
-    }
-
-    // Pre-cargar video anterior
-    if (currentIndex - 1 >= 0) {
-      final previousVideo = widget.videos[currentIndex - 1];
-      cubit.preloadVideo(previousVideo.episodeUrl);
-    }
+  void _onPageChanged(int index) {
+    // Resetear el estado del modal cuando cambia la página
+    setState(() {
+      _isModalVisible = false;
+    });
   }
 
-  void _onPageChanged(int index) {
-    // Pre-cargar videos adyacentes cuando cambia la página
-    _preloadAdjacentVideos(index);
+  void _onModalVisibilityChanged(bool isVisible) {
+    setState(() {
+      _isModalVisible = isVisible;
+    });
   }
 
   @override
@@ -60,112 +53,263 @@ class _VideoScrollableViewState extends State<VideoScrollableView> {
     return PageView.builder(
       controller: _pageController,
       scrollDirection: Axis.vertical,
-      physics: BouncingScrollPhysics(),
+      physics: _isModalVisible
+          ? const NeverScrollableScrollPhysics()
+          : BouncingScrollPhysics(),
       onPageChanged: _onPageChanged,
       itemCount: widget.videos.length,
       itemBuilder: (context, index) {
         final Episode videoPost = widget.videos[index];
 
-        return Stack(
-          children: [
-            //video player + gradientes
-            SizedBox.expand(
-                child: FullScreenPlayer(
-              videoUrl: videoPost.episodeUrl,
-              caption: videoPost.episodeNumber.toString(),
-            )),
-
-            // Icono de pause/play centrado y botones - se muestran/ocultan según el estado
-            BlocBuilder<MoviesCubit, MoviesState>(
-              builder: (context, state) {
-                if (!state.showVideoButtons) {
-                  return const SizedBox.shrink();
-                }
-
-                // Determinar si el video está reproduciendo
-                final isPlaying =
-                    state.videoController?.value.isPlaying ?? false;
-
-                return Stack(
-                  children: [
-                    // Gradiente oscuro en la parte inferior para el texto
-                    Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      child: Container(
-                        height: 200,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              Colors.black.withOpacity(0.8),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Icono de pause/play centrado
-                    Center(
-                      child: GestureDetector(
-                        onTap: () {
-                          context.read<MoviesCubit>().togglePlay();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: Colors.white,
-                            size: 48,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // Botones de reacción (primero, a la derecha)
-                    Positioned(
-                      bottom: 40,
-                      right: 20,
-                      child: VideoButtons(video: videoPost),
-                    ),
-                    // Información del video (título y descripción) en la parte inferior izquierda
-                    Positioned(
-                      bottom: 40,
-                      left: 20,
-                      right:
-                          80, // Menos espacio para dar más ancho a _VideoInfo
-                      child: _VideoInfo(
-                        title: 'Flash Marrige ${videoPost.episodeNumber}',
-                        description:
-                            'A flash marriage" synopsis typically involves a fast, often unexpected marriage between strangers or acquaintances, common in Chinese web novels and dramas like Flash Marriage: The Big Shots Pampered Wife, where a heroine (like Bella) enters a contract marriage with a powerful CEO (Jesse) for convenience (revenge, family, business), only for genuine romance to blossom amidst corporate rivals and challenges, turning their fake union into real love',
-                        currentEpisode: 11,
-                        totalEpisodes: videoPost.episodeNumber,
-                      ),
-                    ),
-                    // Barra de progreso (debajo de VideoButtons y _VideoInfo)
-                    Positioned(
-                      bottom: 20,
-                      left: 20,
-                      right: 20,
-                      child: state.videoController != null
-                          ? _VideoProgressBar(
-                              controller: state.videoController!,
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
+        return _VideoPage(
+          videoPost: videoPost,
+          onModalVisibilityChanged: _onModalVisibilityChanged,
         );
       },
+    );
+  }
+}
+
+class _VideoPage extends StatefulWidget {
+  final Episode videoPost;
+  final ValueChanged<bool>? onModalVisibilityChanged;
+
+  const _VideoPage({
+    required this.videoPost,
+    this.onModalVisibilityChanged,
+  });
+
+  @override
+  State<_VideoPage> createState() => _VideoPageState();
+}
+
+class _VideoPageState extends State<_VideoPage> {
+  bool _showRefillModal = false;
+  bool _showQuickRefills = false;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Si es el episodio 10, iniciar timer para mostrar el modal después de 2 segundos
+    if (widget.videoPost.episodeNumber == 10) {
+      _timer = Timer(const Duration(seconds: 2), () {
+        if (mounted) {
+          setState(() {
+            _showRefillModal = true;
+          });
+          widget.onModalVisibilityChanged?.call(true);
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _onRefillToWatch() {
+    setState(() {
+      _showRefillModal = false;
+      _showQuickRefills = true;
+    });
+    // El modal sigue visible (QuickRefillsWidget), así que mantener el scroll deshabilitado
+    widget.onModalVisibilityChanged?.call(true);
+  }
+
+  void _onCloseQuickRefills() {
+    setState(() {
+      _showQuickRefills = false;
+    });
+    widget.onModalVisibilityChanged?.call(false);
+  }
+
+  void _onCloseModal() {
+    setState(() {
+      _showRefillModal = false;
+      _showQuickRefills = false;
+    });
+    widget.onModalVisibilityChanged?.call(false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        //video player + gradientes
+        SizedBox.expand(
+            child: FullScreenPlayer(
+          videoUrl: widget.videoPost.episodeUrl,
+          caption: widget.videoPost.episodeNumber.toString(),
+        )),
+
+
+        // Icono de pause/play centrado y botones - se muestran/ocultan según el estado
+        BlocBuilder<MoviesCubit, MoviesState>(
+          builder: (context, state) {
+            if (!state.showVideoButtons) {
+              return const SizedBox.shrink();
+            }
+
+            // Determinar si el video está reproduciendo
+            final isPlaying = state.videoController?.value.isPlaying ?? false;
+
+            return Stack(
+              children: [
+                // Gradiente oscuro en la parte inferior para el texto
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.bottomCenter,
+                        end: Alignment.topCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.8),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Icono de pause/play centrado
+                Center(
+                  child: GestureDetector(
+                    onTap: () {
+                      context.read<MoviesCubit>().togglePlay();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isPlaying ? Icons.pause : Icons.play_arrow,
+                        color: Colors.white,
+                        size: 48,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Botones de reacción (primero, a la derecha)
+                Positioned(
+                  bottom: 40,
+                  right: 20,
+                  child: VideoButtons(video: widget.videoPost),
+                ),
+                // Información del video (título y descripción) en la parte inferior izquierda
+                Positioned(
+                  bottom: 40,
+                  left: 20,
+                  right: 80, // Menos espacio para dar más ancho a _VideoInfo
+                  child: _VideoInfo(
+                    title: 'Flash Marrige ${widget.videoPost.episodeNumber}',
+                    description:
+                        'A flash marriage" synopsis typically involves a fast, often unexpected marriage between strangers or acquaintances, common in Chinese web novels and dramas like Flash Marriage: The Big Shots Pampered Wife, where a heroine (like Bella) enters a contract marriage with a powerful CEO (Jesse) for convenience (revenge, family, business), only for genuine romance to blossom amidst corporate rivals and challenges, turning their fake union into real love',
+                    currentEpisode: 11,
+                    totalEpisodes: widget.videoPost.episodeNumber,
+                  ),
+                ),
+                // Barra de progreso (debajo de VideoButtons y _VideoInfo)
+                Positioned(
+                  bottom: 20,
+                  left: 20,
+                  right: 20,
+                  child: state.videoController != null
+                      ? _VideoProgressBar(
+                          controller: state.videoController!,
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            );
+          },
+        ),
+
+        if ((_showRefillModal || _showQuickRefills) &&
+            widget.videoPost.episodeNumber == 10)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.8),
+            ),
+          ),
+        if (_showRefillModal && widget.videoPost.episodeNumber == 10)
+          Stack(
+            children: [
+              Center(
+                child: SlideInUp(
+                  duration: const Duration(milliseconds: 500),
+                  child: _RefillModal(
+                    episode: widget.videoPost,
+                    onRefillToWatch: _onRefillToWatch,
+                  ),
+                ),
+              ),
+              // Botón X para cerrar en la esquina superior derecha
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 10,
+                right: 20,
+                child: GestureDetector(
+                  onTap: _onCloseModal,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        // QuickRefillsWidget cuando se hace click en Refill To Watch
+        if (_showQuickRefills && widget.videoPost.episodeNumber == 10)
+          Stack(
+            children: [
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: SlideInUp(
+                  duration: const Duration(milliseconds: 500),
+                  child: const QuickRefillsWidget(),
+                ),
+              ),
+              // Botón X para cerrar QuickRefillsWidget en la esquina superior derecha
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 10,
+                right: 20,
+                child: GestureDetector(
+                  onTap: _onCloseQuickRefills,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+      ],
     );
   }
 }
@@ -379,6 +523,86 @@ class _VideoProgressBarState extends State<_VideoProgressBar> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(1.5),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RefillModal extends StatelessWidget {
+  final Episode episode;
+  final VoidCallback onRefillToWatch;
+
+  const _RefillModal({
+    required this.episode,
+    required this.onRefillToWatch,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Construir URL de thumbnail de Mux
+    final thumbnailUrl =
+        'https://image.mux.com/${episode.playBlackId}/thumbnail.jpg';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        //col,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Imagen del video
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
+            child: Image.network(
+              thumbnailUrl,
+              width: double.infinity,
+              height: 300,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: double.infinity,
+                  height: 300,
+                  color: Colors.grey[900],
+                  child: const Icon(
+                    Icons.movie_outlined,
+                    color: Colors.grey,
+                    size: 60,
+                  ),
+                );
+              },
+            ),
+          ),
+          // Botón Refill To Watch
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onRefillToWatch,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  'Refill To Watch',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
           ),
