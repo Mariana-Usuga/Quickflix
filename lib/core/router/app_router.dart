@@ -1,25 +1,31 @@
 import 'package:go_router/go_router.dart';
+import 'package:quickflix/features/auth/login_screen.dart';
 import 'package:quickflix/features/discover/discover_screen.dart';
 import 'package:quickflix/features/home/home_screen.dart';
 import 'package:quickflix/features/widgets/movie_screen.dart';
 
 /// Configuración de rutas de la aplicación usando GoRouter
-/// final appRouter = GoRouter(initialLocation: '/home/0', routes: [
-final appRouter = GoRouter(initialLocation: '/home/0', routes: [
-  GoRoute(
+final appRouter = GoRouter(
+  initialLocation: '/login',
+  routes: [
+    GoRoute(
+      path: '/login',
+      name: 'login',
+      builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
       path: '/home/:page',
       name: HomeScreen.name,
       builder: (context, state) {
         var pageIndex = int.parse(state.pathParameters['page'] ?? '0');
         if (pageIndex > 4 || pageIndex < 0) {
-          return const HomeScreen(pageIndex: (0));
+          return const HomeScreen(pageIndex: 0);
         }
-        return HomeScreen(pageIndex: (pageIndex));
+        return HomeScreen(pageIndex: pageIndex);
       },
       routes: [
         GoRoute(
           path: 'movie/:id',
-          //name: MovieScreen.name,
           builder: (context, state) {
             final movieId = state.pathParameters['id'] ?? 'no';
             return MovieScreen(movieId: movieId);
@@ -27,14 +33,18 @@ final appRouter = GoRouter(initialLocation: '/home/0', routes: [
         ),
         GoRoute(
           path: 'discover',
-          //name: MovieScreen.name,
           builder: (context, state) {
-            return DiscoverScreen();
+            return const DiscoverScreen();
           },
-        )
-      ]),
-  GoRoute(path: '/', redirect: (_, __) => '/home/0')
-]);
+        ),
+      ],
+    ),
+    GoRoute(
+      path: '/',
+      redirect: (_, __) => '/login',
+    ),
+  ],
+);
 
 /*class AppRouter {
   static const String login = '/';

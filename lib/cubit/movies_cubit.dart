@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:quickflix/models/episodes.dart';
 import 'package:quickflix/models/video_post.dart';
 import 'package:quickflix/services/local_video_services.dart';
 import 'package:video_player/video_player.dart';
@@ -29,6 +30,9 @@ class MoviesCubit extends Cubit<MoviesState> {
       offset: state.offset + 10,
       videos: [...state.videos, ...videos],
     ));
+  }
+
+  void loadEpisodes(dynamic content) async {
   }
 
   void reset() {

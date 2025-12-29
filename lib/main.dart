@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:purchases_flutter/models/purchases_configuration.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:quickflix/cubit/movies_cubit.dart';
 import 'package:quickflix/features/auth/cubit/auth_cubit.dart';
@@ -44,6 +43,12 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme().gettheme(),
       routerConfig: appRouter,
+      // Asegurar que el AuthCubit se inicialice accediendo a él aquí
+      builder: (context, child) {
+        // Esto fuerza la inicialización del AuthCubit al inicio
+        context.read<AuthCubit>();
+        return child ?? const SizedBox.shrink();
+      },
     );
   }
 }

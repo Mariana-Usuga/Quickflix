@@ -3,6 +3,7 @@ part of 'movies_cubit.dart';
 enum LoadingStatus { initial, loading, success, failure }
 
 class MoviesState {
+  final List<Episode> episodes;
   final List<VideoPost> videos;
   final VideoPost? selectedMovie;
   final bool isLastPage;
@@ -15,6 +16,7 @@ class MoviesState {
   final bool showVideoButtons;
 
   const MoviesState({
+    this.episodes = const [],
     this.videos = const [],
     this.isLastPage = false,
     this.selectedMovie,
@@ -28,6 +30,7 @@ class MoviesState {
   });
 
   MoviesState copyWith({
+    List<Episode>? episodes,
     List<VideoPost>? videos,
     VideoPost? selectedMovie,
     bool? isLastPage,
@@ -40,6 +43,7 @@ class MoviesState {
     bool? showVideoButtons,
   }) {
     return MoviesState(
+      episodes: episodes ?? this.episodes,
       videos: videos ?? this.videos,
       selectedMovie: selectedMovie ?? this.selectedMovie,
       isLastPage: isLastPage ?? this.isLastPage,

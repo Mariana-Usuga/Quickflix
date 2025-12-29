@@ -4,21 +4,21 @@ import 'package:quickflix/models/movie.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LocalVideoServices {
-  Future<List<VideoPost>>  getTrendingVideosByPage(int page) async {
+  Future<List<VideoPost>> getTrendingVideosByPage(int page) async {
     const int pageSize = 10; // Cantidad de videos por página
 
     try {
       // Obtener videos de Supabase con paginación
       // Nota: Si obtienes un array vacío, verifica las políticas RLS en Supabase
       final response = await Supabase.instance.client
-          .from('mux_videos')
+          .from('titles')
           .select()
           .order('created_at', ascending: false)
           .range((page - 1) * pageSize, page * pageSize - 1);
 
       // Convertir los datos de Supabase a VideoPost
       final List<VideoPost> videos = (response as List)
-          .map((video) =>                      
+          .map((video) =>
               LocalVideoModel.fromJson(video as Map<String, dynamic>)
                   .toVideoPostEntity())
           .cast<VideoPost>()
@@ -41,7 +41,7 @@ class LocalVideoServices {
 
       // Buscar en la tabla content_analysis por título
       final response = await Supabase.instance.client
-          .from('mux_videos')
+          .from('titles')
           .select()
           .ilike('title', '%$query%')
           .order('created_at', ascending: false)

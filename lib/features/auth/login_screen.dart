@@ -25,18 +25,26 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       // 1. Llamada al servicio que creamos antes
-      await AuthService().signInWithGoogle();
+      final result = await AuthService().signInWithGoogle();
 
-      // 2. Si todo sale bien, navegar al Home
-      if (mounted) {
-        context.go('/home');
+      // 2. Si el usuario canceló, simplemente no hacer nada
+      if (result == null) {
+        // Usuario canceló, no mostrar error
+        return;
       }
+
+      // 3. Si todo sale bien, navegar al Home
+      // La navegación se manejará automáticamente por el BlocListener
+      // cuando el estado cambie a AuthSuccess
     } on AuthException catch (e) {
       // Error específico de Supabase
       _showError(e.message);
     } catch (e) {
-      // Error genérico (cancelación del usuario, sin internet, etc.)
-      _showError('Error iniciando sesión: $e');
+      // Error genérico (sin internet, etc.)
+      // No mostrar error si es una cancelación (ya se maneja arriba)
+      if (!e.toString().toLowerCase().contains('cancel')) {
+        _showError('Error iniciando sesión: $e');
+      }
     } finally {
       // 3. Quitar estado de carga
       if (mounted) {
@@ -75,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
             );
           }
           if (state is AuthSuccess) {
-            context.go('/home');
+            context.go('/home/0');
           }
         },
         builder: (context, state) {
@@ -296,7 +304,7 @@ class LoginScreen extends StatelessWidget {
                       label: 'Continue with Facebook',
                       icon: Icons.facebook,
                       onPressed: () {
-                        context.go('/home');
+                        context.go('/home/0');
                       },
                     ),
                     const SizedBox(height: 12),

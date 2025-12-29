@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:quickflix/features/widgets/home/category_menu.dart';
 import 'package:quickflix/features/widgets/home/top_bar.dart';
 import 'package:quickflix/features/widgets/home/video_info_card.dart';
+import 'package:quickflix/features/widgets/home/quick_refills_widget.dart';
 import 'package:quickflix/models/video_post.dart';
 
 class MoviesSlideshow extends StatefulWidget {
@@ -21,7 +22,6 @@ class _MoviesSlideshowState extends State<MoviesSlideshow> {
   // 1. Movemos el estado aquí porque el menú ya no está en cada Slide
   String _selectedCategory = 'Popular';
   final SwiperController _swiperController = SwiperController();
-  int _currentIndex = 0;
 
   @override
   void dispose() {
@@ -36,69 +36,73 @@ class _MoviesSlideshowState extends State<MoviesSlideshow> {
     final safeAreaBottom = MediaQuery.of(context).padding.bottom;
     final availableHeight = screenHeight - safeAreaTop - safeAreaBottom;
 
-    return SizedBox(
-      width: double.infinity,
-      height: availableHeight * 0.85,
-      // 2. Usamos un STACK para superponer capas
-      child: Stack(
-        children: [
-          // CAPA 1 (Fondo): El Carrusel (Swiper)
-          Swiper(
-            controller: _swiperController,
-            viewportFraction: 1.0,
-            scale: 0.9,
-            //autoplay: true,
-            pagination: SwiperPagination(
-              builder: SwiperCustomPagination(
-                builder: (BuildContext context, SwiperPluginConfig config) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(config.itemCount, (index) {
-                      final bool isActive = index == config.activeIndex;
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: availableHeight * 0.70,
+          // 2. Usamos un STACK para superponer capas
+          child: Stack(
+            children: [
+              // CAPA 1 (Fondo): El Carrusel (Swiper)
+              Swiper(
+                controller: _swiperController,
+                viewportFraction: 1.0,
+                scale: 0.9,
+                //autoplay: true,
+                pagination: SwiperPagination(
+                  builder: SwiperCustomPagination(
+                    builder: (BuildContext context, SwiperPluginConfig config) {
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(config.itemCount, (index) {
+                          final bool isActive = index == config.activeIndex;
 
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: isActive ? 40.0 : 12.0,
-                        height: 5.0,
-                        decoration: BoxDecoration(
-                          color: isActive ? Colors.white : Colors.white24,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: isActive ? 40.0 : 12.0,
+                            height: 5.0,
+                            decoration: BoxDecoration(
+                              color: isActive ? Colors.white : Colors.white24,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          );
+                        }),
                       );
-                    }),
-                  );
-                },
-              ),
-            ),
-            onIndexChanged: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
-            itemCount: widget.movies.length,
-            itemBuilder: (context, index) =>
-                _Slide(movie: widget.movies[index]),
-          ),
-
-          SafeArea(
-            child: Column(
-              children: [
-                const TopBar(),
-                const SizedBox(height: 5),
-                CategoryMenu(
-                  selectedCategory: _selectedCategory,
-                  onCategorySelected: (category) {
-                    setState(() {
-                      _selectedCategory = category;
-                    });
-                  },
+                    },
+                  ),
                 ),
-              ],
-            ),
+                onIndexChanged: (index) {
+                  // Index changed callback
+                },
+                itemCount: widget.movies.length,
+                itemBuilder: (context, index) =>
+                    _Slide(movie: widget.movies[index]),
+              ),
+
+              SafeArea(
+                child: Column(
+                  children: [
+                    const TopBar(),
+                    const SizedBox(height: 5),
+                    CategoryMenu(
+                      selectedCategory: _selectedCategory,
+                      onCategorySelected: (category) {
+                        setState(() {
+                          _selectedCategory = category;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        // Widget de Quick Refills debajo del Swiper
+        const QuickRefillsWidget(),
+      ],
     );
   }
 }
