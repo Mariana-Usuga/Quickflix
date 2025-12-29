@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:quickflix/features/auth/cubit/auth_cubit.dart';
 import 'package:quickflix/services/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthState;
@@ -108,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Spacer(),
                     // Logo centrado
                     Image.asset(
-                      'assets/clipsyLogo1.png',
+                      'assets/clipsyLogo2.png',
                       height: size.height * 0.15,
                       errorBuilder: (context, error, stackTrace) => const Icon(
                         Icons.movie,
@@ -116,16 +117,20 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: Colors.red,
                       ),
                     ),
-                    const SizedBox(height: 40),
+                    //const SizedBox(height: 20),
 
                     // Subtitle centrado
                     Text(
                       'Start your cinematic journey today. Sign up now and explore endless entertainment.',
                       textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: const Color(0xFFA7A7A7),
+                      ), /*theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.white70,
                         fontSize: 16,
-                      ),
+                      ),*/
                     ),
                     const SizedBox(height: 60),
 
@@ -143,28 +148,35 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: RichText(
                         textAlign: TextAlign.center,
                         text: TextSpan(
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.white54,
+                          style: GoogleFonts.inter(
                             fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: const Color(0xFF888888),
                           ),
-                          children: const [
+                          children: [
                             TextSpan(
-                                text: 'If you continue, you agree to the '),
+                              text: 'If you continue, you agree to the ',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: const Color(0xFF888888),
+                              ),
+                            ),
                             TextSpan(
                               text: 'Terms of Use',
-                              style: TextStyle(
-                                decoration: TextDecoration.underline,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFFFFFFFF),
                               ),
                             ),
                             TextSpan(text: ' and '),
                             TextSpan(
                               text: 'Privacy Policy',
-                              style: TextStyle(
-                                decoration: TextDecoration.underline,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFFFFFFFF),
                               ),
                             ),
                             TextSpan(text: '.'),
@@ -202,7 +214,7 @@ class _SocialButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF1F1F1F),
+          backgroundColor: const Color(0xFF2A2A2A),
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -222,14 +234,23 @@ class _SocialButton extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.g_mobiledata, size: 24),
+                  Image.asset(
+                    'assets/logo_google.png',
+                    width: 17,
+                    height: 17,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.movie,
+                      size: 100,
+                      color: Colors.red,
+                    ),
+                  ),
                   const SizedBox(width: 12),
                   Text(
                     label,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFFFFFFFF),
                     ),
                   ),
                 ],

@@ -48,6 +48,7 @@ dependencies:
   flutter_riverpod: ^3.0.3
   google_fonts: ^6.3.3
   card_swiper: ^3.0.1
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
@@ -74,8 +75,15 @@ flutter:
   assets:
     - assets/logo.png
     - assets/clipsyLogo1.png
+    - assets/clipsyLogo2.png
+    - assets/logo_google.png
     - assets/2.png
     - .env
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo_main.png"
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
