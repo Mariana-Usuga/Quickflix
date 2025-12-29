@@ -64,6 +64,15 @@ class _VideoScrollableViewState extends State<VideoScrollableView> {
         return _VideoPage(
           videoPost: videoPost,
           onModalVisibilityChanged: _onModalVisibilityChanged,
+          onRedirectBack: () {
+            if (index > 0) {
+              _pageController.animateToPage(
+                index - 1,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeInOutCubic,
+              );
+            }
+          },
         );
       },
     );
@@ -73,10 +82,12 @@ class _VideoScrollableViewState extends State<VideoScrollableView> {
 class _VideoPage extends StatefulWidget {
   final Episode videoPost;
   final ValueChanged<bool>? onModalVisibilityChanged;
+  final VoidCallback? onRedirectBack;
 
   const _VideoPage({
     required this.videoPost,
     this.onModalVisibilityChanged,
+    this.onRedirectBack,
   });
 
   @override
@@ -86,6 +97,7 @@ class _VideoPage extends StatefulWidget {
 class _VideoPageState extends State<_VideoPage> {
   bool _showRefillModal = false;
   bool _showQuickRefills = false;
+  bool _isExiting = false;
   Timer? _timer;
 
   @override
@@ -95,6 +107,7 @@ class _VideoPageState extends State<_VideoPage> {
     if (widget.videoPost.episodeNumber == 10) {
       _timer = Timer(const Duration(seconds: 2), () {
         if (mounted) {
+          context.read<MoviesCubit>().togglePlay();
           setState(() {
             _showRefillModal = true;
           });
@@ -124,14 +137,19 @@ class _VideoPageState extends State<_VideoPage> {
       _showQuickRefills = false;
     });
     widget.onModalVisibilityChanged?.call(false);
+
+    widget.onRedirectBack?.call();
   }
 
-  void _onCloseModal() {
+  void _onCloseModal() async {
+    setState(() => _isExiting = true);
+    await Future.delayed(const Duration(milliseconds: 600));
     setState(() {
       _showRefillModal = false;
       _showQuickRefills = false;
     });
     widget.onModalVisibilityChanged?.call(false);
+    widget.onRedirectBack?.call();
   }
 
   @override
@@ -144,7 +162,6 @@ class _VideoPageState extends State<_VideoPage> {
           videoUrl: widget.videoPost.episodeUrl,
           caption: widget.videoPost.episodeNumber.toString(),
         )),
-
 
         // Icono de pause/play centrado y botones - se muestran/ocultan según el estado
         BlocBuilder<MoviesCubit, MoviesState>(
@@ -235,9 +252,12 @@ class _VideoPageState extends State<_VideoPage> {
 
         if ((_showRefillModal || _showQuickRefills) &&
             widget.videoPost.episodeNumber == 10)
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(0.8),
+          FadeOut(
+            animate: _isExiting,
+            child: Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.8),
+              ),
             ),
           ),
         if (_showRefillModal && widget.videoPost.episodeNumber == 10)
@@ -246,28 +266,42 @@ class _VideoPageState extends State<_VideoPage> {
               Center(
                 child: SlideInUp(
                   duration: const Duration(milliseconds: 500),
-                  child: _RefillModal(
-                    episode: widget.videoPost,
-                    onRefillToWatch: _onRefillToWatch,
-                  ),
+                  child: _isExiting
+                      ? FadeOutDown(
+                          duration: const Duration(milliseconds: 500),
+                          child: _RefillModal(
+                            episode: widget.videoPost,
+                            onRefillToWatch: _onRefillToWatch,
+                          ),
+                        )
+                      : SlideInUp(
+                          duration: const Duration(milliseconds: 500),
+                          child: _RefillModal(
+                            episode: widget.videoPost,
+                            onRefillToWatch: _onRefillToWatch,
+                          ),
+                        ),
                 ),
               ),
               // Botón X para cerrar en la esquina superior derecha
               Positioned(
                 top: MediaQuery.of(context).padding.top + 10,
                 right: 20,
-                child: GestureDetector(
-                  onTap: _onCloseModal,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 24,
+                child: FadeOut(
+                  animate: _isExiting,
+                  child: GestureDetector(
+                    onTap: _onCloseModal,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 24,
+                      ),
                     ),
                   ),
                 ),
