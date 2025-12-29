@@ -57,7 +57,12 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
 
         if (movies.isEmpty && query.isNotEmpty) {
           return const Center(
-            child: Text('No se encontraron películas'),
+            child: Text(
+              'No Results Found',
+              style: TextStyle(
+                color: Colors.white,
+              ),
+            ),
           );
         }
 
@@ -78,7 +83,7 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
   }
 
   @override
-  String get searchFieldLabel => 'Buscar pelicula';
+  String get searchFieldLabel => 'Search';
 
   @override
   List<Widget>? buildActions(BuildContext context) {
@@ -95,8 +100,7 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
               spins: 10,
               infinite: true,
               child: IconButton(
-                  onPressed: () => query = '',
-                  icon: const Icon(Icons.access_alarm_outlined)),
+                  onPressed: () => query = '', icon: const Icon(Icons.refresh)),
             );
           }
           return FadeIn(

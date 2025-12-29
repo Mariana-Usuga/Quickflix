@@ -25,8 +25,15 @@ void main() async {
 
   final localVideoServices = LocalVideoServices();
   await initRevenueCat();
+
+  // Crear el AuthCubit antes del router
+  final authCubit = AuthCubit(Supabase.instance.client);
+
+  // Inicializar el router con el AuthCubit
+  appRouter = createAppRouter(authCubit);
+
   runApp(MultiBlocProvider(providers: [
-    BlocProvider(create: (context) => AuthCubit(Supabase.instance.client)),
+    BlocProvider.value(value: authCubit),
     BlocProvider(
         create: (context) =>
             MoviesCubit(localVideoServices: localVideoServices)),

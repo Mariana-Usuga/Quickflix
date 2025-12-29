@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:quickflix/features/widgets/home/category_menu.dart';
 import 'package:quickflix/features/widgets/home/top_bar.dart';
 import 'package:quickflix/features/widgets/home/video_info_card.dart';
-import 'package:quickflix/features/widgets/home/quick_refills_widget.dart';
 import 'package:quickflix/features/widgets/shared/custom_gradient.dart';
 import 'package:quickflix/models/video_post.dart';
 
@@ -41,7 +40,8 @@ class _MoviesSlideshowState extends State<MoviesSlideshow> {
       children: [
         SizedBox(
           width: double.infinity,
-          height: availableHeight * 0.70,
+          height: availableHeight *
+              0.90 , // Aumentado de 0.70 a 0.85 para hacer la imagen más grande
           // 2. Usamos un STACK para superponer capas
           child: Stack(
             children: [
@@ -49,7 +49,8 @@ class _MoviesSlideshowState extends State<MoviesSlideshow> {
               Swiper(
                 controller: _swiperController,
                 viewportFraction: 1.0,
-                scale: 0.9,
+                scale:
+                    1.0, // Cambiado de 0.9 a 1.0 para que la imagen sea más grande
                 //autoplay: true,
                 pagination: SwiperPagination(
                   builder: SwiperCustomPagination(
@@ -116,7 +117,7 @@ class _Slide extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Imagen de fondo
+        // Imagen de fondo - usa todo el espacio disponible
         SizedBox.expand(
           child: movie.imageUrl.isNotEmpty
               ? Image.network(

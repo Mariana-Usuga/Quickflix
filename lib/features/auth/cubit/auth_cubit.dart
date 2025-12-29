@@ -16,15 +16,9 @@ class AuthCubit extends Cubit<AuthState> {
   VoidCallback? _onResetProfile;
   VoidCallback? _onResetUpload;
 
-  AuthCubit(this.supabase) : super(AuthInitial()) {
-    // Check if there's already a saved session
-    final session = supabase.auth.currentSession;
-
-    if (session != null) {
-      _updateAuthWithSubscription(session.user);
-    } else {
-      emit(Unauthenticated());
-    }
+  AuthCubit(this.supabase) : super(AuthLoading()) {
+    // Emitir AuthLoading mientras se verifica la sesión
+    _checkInitialSession();
 
     supabase.auth.onAuthStateChange.listen((data) {
       final Session? session = data.session;
@@ -37,6 +31,17 @@ class AuthCubit extends Cubit<AuthState> {
         _handleSignOut();
       }
     });
+  }
+
+  Future<void> _checkInitialSession() async {
+    // Check if there's already a saved session
+    final session = supabase.auth.currentSession;
+
+    if (session != null) {
+      await _updateAuthWithSubscription(session.user);
+    } else {
+      emit(Unauthenticated());
+    }
   }
 
   Future<void> _updateAuthWithSubscription(User user) async {
@@ -87,7 +92,7 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> signIn({required String email, required String password}) async {
     emit(AuthLoading());
     try {
-      final response = await supabase.auth.signInWithPassword(
+      await supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
@@ -105,7 +110,7 @@ class AuthCubit extends Cubit<AuthState> {
     try {
       // We no longer save 'plan_type' in Supabase.
       // RevenueCat will assign the 'free' plan by default.
-      final response = await supabase.auth.signUp(
+      await supabase.auth.signUp(
         email: email,
         password: password,
       );
