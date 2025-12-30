@@ -28,9 +28,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     return Scaffold(
       body: BlocBuilder<MoviesCubit, MoviesState>(
         builder: (context, state) {
-          /*if (state.isLoading) {
+          if (state.isLoading) {
             return const Center(child: CircularProgressIndicator());
-          }*/
+          }
 
           return VideoScrollableView(videos: state.episodes);
         },

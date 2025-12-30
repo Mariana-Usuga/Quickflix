@@ -1,16 +1,307 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:animate_do/animate_do.dart';
-import 'package:quickflix/models/episodes.dart';
 import 'package:quickflix/features/widgets/shared/video_buttons.dart';
+import 'package:quickflix/features/widgets/video/cubit/video_cubit.dart';
 import 'package:quickflix/features/widgets/video/fullscreen_player.dart';
-import 'package:quickflix/features/widgets/home/quick_refills_widget.dart';
-import 'package:quickflix/cubit/movies_cubit.dart';
+import 'package:quickflix/models/episodes.dart';
 import 'package:video_player/video_player.dart';
 
-class VideoScrollableView extends StatefulWidget {
+class VideoScrollableView extends StatelessWidget {
+  final List<Episode> videos;
+
+  const VideoScrollableView({super.key, required this.videos});
+
+  @override
+  Widget build(BuildContext context) {
+    return PageView.builder(
+      //este widget nos permite hacer un scroll a pantalla completa es como dezplaxzarse entre pantallas
+      scrollDirection: Axis.vertical,
+      physics: BouncingScrollPhysics(),
+      itemCount: videos
+          .length, // para que se pueda desplazar por defecto esta propiedads lo permite
+      itemBuilder: (context, index) {
+        final Episode videoPost = videos[index];
+
+        return Stack(
+          //el stack es un widget que permite superponer unos sobre otros
+          children: [
+            //video player + gradientes
+            SizedBox.expand(
+                //esto es para asegurarnos de que el reproductor tome el tamaño de la pantalla
+                child: FullScreenPlayer(
+              videoUrl: videoPost.episodeUrl,
+              caption: videoPost.episodeNumber.toString(),
+              overlay: BlocBuilder<VideoCubit, VideoState>(
+                buildWhen: (previous, current) {
+                  // Solo reconstruir cuando cambie el controller o el estado de inicialización
+                  return previous.controller != current.controller ||
+                      previous.isInitialized != current.isInitialized;
+                },
+                builder: (context, videoState) {
+                  return Positioned(
+                    bottom: 20,
+                    left: 20,
+                    right: 20,
+                    child: videoState.controller != null &&
+                            videoState.isInitialized
+                        ? _VideoProgressBar(
+                            controller: videoState.controller!,
+                          )
+                        : const SizedBox.shrink(),
+                  );
+                },
+              ),
+            )),
+            // Botón de play/pause usando VideoCubit
+
+            // botones
+            Positioned(
+              bottom: 40,
+              right: 20,
+              child: VideoButtons(video: videoPost),
+            ),
+            Positioned(
+              bottom: 40,
+              left: 20,
+              right: 80, // Menos espacio para dar más ancho a _VideoInfo
+              child: _VideoInfo(
+                title: 'Flash Marrige ${videoPost.episodeNumber}',
+                description:
+                    'A flash marriage" synopsis typically involves a fast, often unexpected marriage between strangers or acquaintances, common in Chinese web novels and dramas like Flash Marriage: The Big Shots Pampered Wife, where a heroine (like Bella) enters a contract marriage with a powerful CEO (Jesse) for convenience (revenge, family, business), only for genuine romance to blossom amidst corporate rivals and challenges, turning their fake union into real love',
+                currentEpisode: 11,
+                totalEpisodes: videoPost.episodeNumber,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _VideoInfo extends StatefulWidget {
+  final String title;
+  final String description;
+  final int currentEpisode;
+  final int totalEpisodes;
+
+  const _VideoInfo({
+    required this.title,
+    required this.description,
+    required this.currentEpisode,
+    required this.totalEpisodes,
+  });
+
+  @override
+  State<_VideoInfo> createState() => _VideoInfoState();
+}
+
+class _VideoInfoState extends State<_VideoInfo> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Título
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                widget.title,
+                style: GoogleFonts.inter(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFFF5F5F5),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.white,
+              size: 16,
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Descripción con botón More/Less
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _isExpanded = !_isExpanded;
+            });
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.description.isNotEmpty
+                    ? widget.description
+                    : 'Sin descripción disponible',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.white.withOpacity(0.9),
+                  height: 1.4,
+                ),
+                maxLines: _isExpanded ? null : 2,
+                overflow: _isExpanded ? null : TextOverflow.ellipsis,
+              ),
+              if (widget.description.length > 100)
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _isExpanded = !_isExpanded;
+                    });
+                  },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    _isExpanded ? 'Less' : 'More...',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFFF5F5F5),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        // Indicador de episodio (EP.9 / 10) - debajo de la descripción
+        Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'EP.${widget.currentEpisode} / ${widget.totalEpisodes}',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.keyboard_arrow_up,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _VideoProgressBar extends StatefulWidget {
+  final VideoPlayerController controller;
+
+  const _VideoProgressBar({required this.controller});
+
+  @override
+  State<_VideoProgressBar> createState() => _VideoProgressBarState();
+}
+
+class _VideoProgressBarState extends State<_VideoProgressBar> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(_VideoProgressBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      _cancelTimer();
+      _startTimer();
+    }
+  }
+
+  @override
+  void dispose() {
+    _cancelTimer();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (mounted && widget.controller.value.isInitialized) {
+        setState(() {});
+      }
+    });
+  }
+
+  void _cancelTimer() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.controller.value.isInitialized) {
+      return const SizedBox.shrink();
+    }
+
+    final duration = widget.controller.value.duration;
+    final position = widget.controller.value.position;
+
+    if (duration.inMilliseconds == 0) {
+      return const SizedBox.shrink();
+    }
+
+    final progress = position.inMilliseconds / duration.inMilliseconds;
+
+    return Container(
+      height: 3,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(1.5),
+      ),
+      child: Stack(
+        children: [
+          // Fondo de la barra
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(1.5),
+            ),
+          ),
+          // Barra de progreso
+          FractionallySizedBox(
+            widthFactor: progress.clamp(0.0, 1.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(1.5),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/*class VideoScrollableView extends StatefulWidget {
   final List<Episode> videos;
 
   const VideoScrollableView({super.key, required this.videos});
@@ -348,223 +639,9 @@ class _VideoPageState extends State<_VideoPage> {
   }
 }
 
-class _VideoInfo extends StatefulWidget {
-  final String title;
-  final String description;
-  final int currentEpisode;
-  final int totalEpisodes;
 
-  const _VideoInfo({
-    required this.title,
-    required this.description,
-    required this.currentEpisode,
-    required this.totalEpisodes,
-  });
 
-  @override
-  State<_VideoInfo> createState() => _VideoInfoState();
-}
 
-class _VideoInfoState extends State<_VideoInfo> {
-  bool _isExpanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Título
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                widget.title,
-                style: GoogleFonts.inter(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w500,
-                  color: const Color(0xFFF5F5F5),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white,
-              size: 16,
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        // Descripción con botón More/Less
-        GestureDetector(
-          onTap: () {
-            setState(() {
-              _isExpanded = !_isExpanded;
-            });
-          },
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.description.isNotEmpty
-                    ? widget.description
-                    : 'Sin descripción disponible',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.white.withOpacity(0.9),
-                  height: 1.4,
-                ),
-                maxLines: _isExpanded ? null : 2,
-                overflow: _isExpanded ? null : TextOverflow.ellipsis,
-              ),
-              if (widget.description.length > 100)
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _isExpanded = !_isExpanded;
-                    });
-                  },
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    _isExpanded ? 'Less' : 'More...',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFFF5F5F5),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        // Indicador de episodio (EP.9 / 10) - debajo de la descripción
-        Align(
-          alignment: Alignment.centerRight,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'EP.${widget.currentEpisode} / ${widget.totalEpisodes}',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(
-                  Icons.keyboard_arrow_up,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _VideoProgressBar extends StatefulWidget {
-  final VideoPlayerController controller;
-
-  const _VideoProgressBar({required this.controller});
-
-  @override
-  State<_VideoProgressBar> createState() => _VideoProgressBarState();
-}
-
-class _VideoProgressBarState extends State<_VideoProgressBar> {
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _startTimer();
-  }
-
-  @override
-  void didUpdateWidget(_VideoProgressBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.controller != widget.controller) {
-      _cancelTimer();
-      _startTimer();
-    }
-  }
-
-  @override
-  void dispose() {
-    _cancelTimer();
-    super.dispose();
-  }
-
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      if (mounted && widget.controller.value.isInitialized) {
-        setState(() {});
-      }
-    });
-  }
-
-  void _cancelTimer() {
-    _timer?.cancel();
-    _timer = null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (!widget.controller.value.isInitialized) {
-      return const SizedBox.shrink();
-    }
-
-    final duration = widget.controller.value.duration;
-    final position = widget.controller.value.position;
-
-    if (duration.inMilliseconds == 0) {
-      return const SizedBox.shrink();
-    }
-
-    final progress = position.inMilliseconds / duration.inMilliseconds;
-
-    return Container(
-      height: 3,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(1.5),
-      ),
-      child: Stack(
-        children: [
-          // Fondo de la barra
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(1.5),
-            ),
-          ),
-          // Barra de progreso
-          FractionallySizedBox(
-            widthFactor: progress.clamp(0.0, 1.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(1.5),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class _RefillModal extends StatelessWidget {
   final Episode episode;
@@ -644,7 +721,7 @@ class _RefillModal extends StatelessWidget {
       ),
     );
   }
-}
+}*/
 
 /* NOTAS IMPORTANTES
   el page view no se deben cargar mas de tres vistas ya que son recuros de memoria no utilizados

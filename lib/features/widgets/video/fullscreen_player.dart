@@ -1,5 +1,156 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:quickflix/features/widgets/video/cubit/video_cubit.dart';
+import 'package:quickflix/features/widgets/video/video_background.dart';
+import 'package:video_player/video_player.dart';
+
+class FullScreenPlayer extends StatefulWidget {
+  final String videoUrl;
+  final String caption;
+  final Widget? overlay;
+
+  const FullScreenPlayer({
+    super.key,
+    required this.videoUrl,
+    required this.caption,
+    this.overlay,
+  });
+
+  @override
+  State<FullScreenPlayer> createState() => _FullScreenPlayerState();
+}
+
+class _FullScreenPlayerState extends State<FullScreenPlayer> {
+  late final VideoCubit _videoCubit;
+
+  @override
+  void initState() {
+    super.initState();
+    _videoCubit = VideoCubit();
+    _videoCubit.initializeVideo(widget.videoUrl);
+  }
+
+  @override
+  void didUpdateWidget(FullScreenPlayer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Si cambió la URL del video, reinicializar
+    if (oldWidget.videoUrl != widget.videoUrl) {
+      _videoCubit.initializeVideo(widget.videoUrl);
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoCubit.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider.value(
+      value: _videoCubit,
+      child: BlocBuilder<VideoCubit, VideoState>(
+        bloc: _videoCubit,
+        buildWhen: (previous, current) {
+          // Solo reconstruir cuando cambie el controller o el estado de inicialización
+          return previous.controller != current.controller ||
+              previous.isInitialized != current.isInitialized;
+        },
+        builder: (context, state) {
+          // Mostrar error si hay uno
+          if (state.errorMessage != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    color: Colors.white,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    state.errorMessage!,
+                    style: const TextStyle(color: Colors.white),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      _videoCubit.initializeVideo(widget.videoUrl);
+                    },
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Mostrar loading si no está inicializado
+          if (!state.isInitialized ||
+              state.controller == null ||
+              !state.controller!.value.isInitialized) {
+            return const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.amber,
+              ),
+            );
+          }
+
+          return GestureDetector(
+            onTap: () {
+              _videoCubit.togglePlayPause();
+            },
+            child: AspectRatio(
+              aspectRatio: state.controller!.value.aspectRatio,
+              child: Stack(
+                children: [
+                  VideoPlayer(state.controller!),
+
+                  //gradiente
+                  VideoBackground(
+                    stops: const [0.8, 1.0],
+                  ),
+
+                  // Overlay que puede acceder al VideoCubit
+                  if (widget.overlay != null) widget.overlay!,
+
+                  //texto
+                  /*Positioned(
+                    bottom: 50,
+                    left: 20,
+                    child: _VideoCaption(caption: widget.caption),
+                  )*/
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _VideoCaption extends StatelessWidget {
+  final String caption;
+
+  const _VideoCaption({required this.caption});
+
+  @override
+  Widget build(BuildContext context) {
+    final Size = MediaQuery.of(context).size;
+    final titleStyle = Theme.of(context).textTheme.titleLarge;
+
+    return SizedBox(
+      width: Size.width * 0.6,
+      child: Text(caption, maxLines: 2, style: titleStyle),
+    );
+  }
+}
+
+/*import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:quickflix/cubit/movies_cubit.dart';
 import 'package:video_player/video_player.dart';
 
@@ -102,7 +253,7 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
       },
     );
   }
-}
+}*/
 
 /*import 'dart:async';
 import 'package:flutter/material.dart';
