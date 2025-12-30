@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:quickflix/features/widgets/my_list/my_list_item.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:quickflix/cubit/movies_cubit.dart';
+import 'package:quickflix/features/widgets/shared/move_item.dart';
+import 'package:quickflix/models/movie.dart';
 
 class MyListScreen extends StatefulWidget {
   const MyListScreen({super.key});
@@ -9,13 +13,20 @@ class MyListScreen extends StatefulWidget {
 }
 
 class _MyListScreenState extends State<MyListScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    // Cargar los videos guardados cuando se inicializa el widget
+    context
+        .read<MoviesCubit>()
+        .loadSavedVideosByProfileId('8057f308-db04-4775-8219-a882a6a4e5d6');
   }
 
   @override
@@ -26,6 +37,7 @@ class _MyListScreenState extends State<MyListScreen>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Necesario para AutomaticKeepAliveClientMixin
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -128,8 +140,8 @@ class _MyListScreenState extends State<MyListScreen>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildVideoList(),
-                  _buildVideoList(),
+                  _buildSavedList(), // Pestaña "Saved" - muestra videos guardados con MovieItem
+                  _buildWatchingList(), // Pestaña "Watching" - otra lista
                 ],
               ),
             ),
@@ -139,18 +151,60 @@ class _MyListScreenState extends State<MyListScreen>
     );
   }
 
-  Widget _buildVideoList() {
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      itemCount: 3, // Mostrar 3 items hardcoded
-      itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: MyListItem(
-            showEpisodeInfo: index % 2 == 0, // Alternar para mostrar variedad
-          ),
+  /// Construye la lista de videos guardados para la pestaña "Saved"
+  /// Usa MovieItem para mostrar cada video guardado
+  Widget _buildSavedList() {
+    return BlocBuilder<MoviesCubit, MoviesState>(
+      builder: (context, state) {
+        if (state.isLoading) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        if (state.savedVideos.isEmpty) {
+          return const Center(
+            child: Text(
+              'No saved videos',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          //padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          itemCount: state.savedVideos.length,
+          itemBuilder: (context, index) {
+            final videoPost = state.savedVideos[index];
+            final movie = Movie.fromVideoPost(videoPost);
+
+            return MovieItem(
+              movie: movie,
+              onMovieSelected: (BuildContext context, Movie movie) {
+                // Navegar a la pantalla de detalles del video
+                context.push('/home/0/movie/${movie.id}');
+              },
+            );
+          },
         );
       },
+    );
+  }
+
+  /// Construye la lista de videos en reproducción para la pestaña "Watching"
+  Widget _buildWatchingList() {
+    // TODO: Implementar la lógica para videos en reproducción
+    return const Center(
+      child: Text(
+        'Watching list coming soon',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+        ),
+      ),
     );
   }
 }

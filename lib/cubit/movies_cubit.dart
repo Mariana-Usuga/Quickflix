@@ -146,6 +146,29 @@ class MoviesCubit extends Cubit<MoviesState> {
     emit(state.copyWith(showVideoButtons: !state.showVideoButtons));
   }
 
+  /// Obtiene los videos guardados según el profile_id
+  /// profile_id es un UUID (String)
+  Future<void> loadSavedVideosByProfileId(String profileId) async {
+    try {
+      emit(state.copyWith(isLoading: true));
+
+      final savedVideos =
+          await localVideoServices.getSavedVideosByProfileId(profileId);
+
+      emit(state.copyWith(
+        savedVideos: savedVideos,
+        isLoading: false,
+        isLastPage: true, // Los videos guardados no tienen paginación
+      ));
+    } catch (e) {
+      print('Error al cargar videos guardados: $e');
+      emit(state.copyWith(
+        isLoading: false,
+        videos: [],
+      ));
+    }
+  }
+
   @override
   Future<void> close() async {
     await _disposeVideo();
