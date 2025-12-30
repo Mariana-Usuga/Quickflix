@@ -26,8 +26,9 @@ void main() async {
   final localVideoServices = LocalVideoServices();
   await initRevenueCat();
 
-  // Crear el AuthCubit antes del router
-  final authCubit = AuthCubit(Supabase.instance.client);
+  // Crear el AuthCubit antes del router con LocalVideoServices
+  final authCubit = AuthCubit(Supabase.instance.client,
+      localVideoServices: localVideoServices);
 
   // Inicializar el router con el AuthCubit
   appRouter = createAppRouter(authCubit);

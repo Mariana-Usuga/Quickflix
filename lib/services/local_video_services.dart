@@ -3,6 +3,7 @@ import 'package:quickflix/models/video_post.dart';
 import 'package:quickflix/models/movie.dart';
 import 'package:quickflix/models/episodes.dart';
 import 'package:quickflix/models/episode_model.dart';
+import 'package:quickflix/models/profile.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LocalVideoServices {
@@ -287,6 +288,24 @@ class LocalVideoServices {
         print('Stack trace: $stackTrace2');
         throw Exception('Error al obtener videos en progreso de Supabase: $e2');
       }
+    }
+  }
+
+  /// Obtiene el perfil del usuario desde la tabla profiles
+  /// profile_id es un UUID (String)
+  Future<Profile> getProfileById(String profileId) async {
+    try {
+      final response = await Supabase.instance.client
+          .from('profiles')
+          .select()
+          .eq('id', profileId)
+          .single();
+
+      return Profile.fromJson(response);
+    } catch (e, stackTrace) {
+      print('Error al obtener perfil de Supabase: $e');
+      print('Stack trace: $stackTrace');
+      throw Exception('Error al obtener perfil: $e');
     }
   }
 }

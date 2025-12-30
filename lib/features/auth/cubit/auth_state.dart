@@ -9,7 +9,8 @@ class AuthLoading extends AuthState {}
 
 class AuthSuccess extends AuthState {
   final UserEntity user;
-  AuthSuccess(this.user);
+  final Profile? profile;
+  AuthSuccess(this.user, {this.profile});
 }
 
 class AuthFailure extends AuthState {
