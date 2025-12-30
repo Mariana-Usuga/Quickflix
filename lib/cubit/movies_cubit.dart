@@ -39,14 +39,14 @@ class MoviesCubit extends Cubit<MoviesState> {
       final newEpisodes =
           await localVideoServices.getEpisodesByTitleId(titleId);
 
-      // Solo tomar los últimos 3 episodios para desarrollo
-      /* final lastThreeEpisodes = newEpisodes.length > 3
-          ? newEpisodes.sublist(newEpisodes.length - 3)
-          : newEpisodes;*/
+      // Solo tomar los últimos 5 episodios para desarrollo
+      final lastFiveEpisodes = newEpisodes.length > 5
+          ? newEpisodes.sublist(newEpisodes.length - 5)
+          : newEpisodes;
 
       final orderedEpisodes = [
         ...state.episodes,
-        ...newEpisodes,
+        ...lastFiveEpisodes,
       ]..sort((a, b) => a.episodeNumber.compareTo(b.episodeNumber));
 
       emit(state.copyWith(

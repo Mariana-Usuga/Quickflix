@@ -155,26 +155,4 @@ class AuthCubit extends Cubit<AuthState> {
     _resetAllCubits();
     emit(Unauthenticated());
   }
-
-  /// Obtiene el perfil del usuario autenticado
-  Future<void> loadUserProfile() async {
-    final currentState = state;
-    if (currentState is! AuthSuccess) {
-      return;
-    }
-
-    if (localVideoServices == null) {
-      print('LocalVideoServices no está disponible');
-      return;
-    }
-
-    try {
-      final profile =
-          await localVideoServices!.getProfileById(currentState.user.id);
-      emit(AuthSuccess(currentState.user, profile: profile));
-    } catch (e) {
-      print('Error al cargar perfil del usuario: $e');
-      // Mantener el estado actual sin perfil si hay error
-    }
-  }
 }

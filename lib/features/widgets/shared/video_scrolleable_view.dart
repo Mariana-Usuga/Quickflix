@@ -4,81 +4,343 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:quickflix/features/widgets/home/quick_refills_widget.dart';
 import 'package:quickflix/features/widgets/shared/video_buttons.dart';
 import 'package:quickflix/features/widgets/video/cubit/video_cubit.dart';
 import 'package:quickflix/features/widgets/video/fullscreen_player.dart';
 import 'package:quickflix/models/episodes.dart';
 import 'package:video_player/video_player.dart';
 
-class VideoScrollableView extends StatelessWidget {
+class VideoScrollableView extends StatefulWidget {
   final List<Episode> videos;
 
   const VideoScrollableView({super.key, required this.videos});
 
   @override
+  State<VideoScrollableView> createState() => _VideoScrollableViewState();
+}
+
+class _VideoScrollableViewState extends State<VideoScrollableView> {
+  late PageController _pageController;
+  bool _isModalVisible = false;
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onPageChanged(int index) {
+    setState(() {
+      _currentIndex = index;
+      _isModalVisible = false;
+    });
+  }
+
+  void _onModalVisibilityChanged(bool isVisible) {
+    setState(() {
+      _isModalVisible = isVisible;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return PageView.builder(
-      //este widget nos permite hacer un scroll a pantalla completa es como dezplaxzarse entre pantallas
+      controller: _pageController,
       scrollDirection: Axis.vertical,
-      physics: BouncingScrollPhysics(),
-      itemCount: videos
-          .length, // para que se pueda desplazar por defecto esta propiedads lo permite
+      // Deshabilitar scroll si el modal está visible o si está en el episodio 10
+      physics: (_isModalVisible ||
+              (_currentIndex < widget.videos.length &&
+                  widget.videos[_currentIndex].episodeNumber == 10))
+          ? const NeverScrollableScrollPhysics()
+          : BouncingScrollPhysics(),
+      onPageChanged: _onPageChanged,
+      itemCount: widget.videos.length,
       itemBuilder: (context, index) {
-        final Episode videoPost = videos[index];
+        final Episode videoPost = widget.videos[index];
 
-        return Stack(
-          //el stack es un widget que permite superponer unos sobre otros
-          children: [
-            //video player + gradientes
-            SizedBox.expand(
-                //esto es para asegurarnos de que el reproductor tome el tamaño de la pantalla
-                child: FullScreenPlayer(
-              videoUrl: videoPost.episodeUrl,
-              caption: videoPost.episodeNumber.toString(),
-              overlay: BlocBuilder<VideoCubit, VideoState>(
-                buildWhen: (previous, current) {
-                  // Solo reconstruir cuando cambie el controller o el estado de inicialización
-                  return previous.controller != current.controller ||
-                      previous.isInitialized != current.isInitialized;
-                },
-                builder: (context, videoState) {
-                  return Positioned(
-                    bottom: 20,
-                    left: 20,
-                    right: 20,
-                    child: videoState.controller != null &&
-                            videoState.isInitialized
-                        ? _VideoProgressBar(
-                            controller: videoState.controller!,
-                          )
-                        : const SizedBox.shrink(),
-                  );
-                },
-              ),
-            )),
-            // Botón de play/pause usando VideoCubit
-
-            // botones
-            Positioned(
-              bottom: 40,
-              right: 20,
-              child: VideoButtons(video: videoPost),
-            ),
-            Positioned(
-              bottom: 40,
-              left: 20,
-              right: 80, // Menos espacio para dar más ancho a _VideoInfo
-              child: _VideoInfo(
-                title: 'Flash Marrige ${videoPost.episodeNumber}',
-                description:
-                    'A flash marriage" synopsis typically involves a fast, often unexpected marriage between strangers or acquaintances, common in Chinese web novels and dramas like Flash Marriage: The Big Shots Pampered Wife, where a heroine (like Bella) enters a contract marriage with a powerful CEO (Jesse) for convenience (revenge, family, business), only for genuine romance to blossom amidst corporate rivals and challenges, turning their fake union into real love',
-                currentEpisode: 11,
-                totalEpisodes: videoPost.episodeNumber,
-              ),
-            ),
-          ],
+        return _VideoPage(
+          videoPost: videoPost,
+          onModalVisibilityChanged: _onModalVisibilityChanged,
+          onRedirectBack: () {
+            if (index > 0) {
+              _pageController.animateToPage(
+                index - 1,
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeInOutCubic,
+              );
+            }
+          },
         );
       },
+    );
+  }
+}
+
+class _VideoPage extends StatefulWidget {
+  final Episode videoPost;
+  final ValueChanged<bool>? onModalVisibilityChanged;
+  final VoidCallback? onRedirectBack;
+
+  const _VideoPage({
+    required this.videoPost,
+    this.onModalVisibilityChanged,
+    this.onRedirectBack,
+  });
+
+  @override
+  State<_VideoPage> createState() => _VideoPageState();
+}
+
+class _VideoPageState extends State<_VideoPage>
+    with SingleTickerProviderStateMixin {
+  bool _showRefillModal = false;
+  bool _showQuickRefills = false;
+  bool _isExiting = false;
+  Timer? _timer;
+  late AnimationController _slideAnimationController;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicializar el AnimationController para la animación de slide
+    _slideAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 1), // Empieza desde abajo
+      end: Offset.zero, // Termina en su posición normal
+    ).animate(CurvedAnimation(
+      parent: _slideAnimationController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    // Si es el episodio 10, iniciar timer para mostrar el modal después de 2 segundos
+    if (widget.videoPost.episodeNumber == 10) {
+      _timer = Timer(const Duration(seconds: 2), () {
+        if (mounted) {
+          // Pausar el video
+          context.read<VideoCubit>().togglePlayPause();
+          setState(() {
+            _showRefillModal = true;
+          });
+          widget.onModalVisibilityChanged?.call(true);
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _slideAnimationController.dispose();
+    super.dispose();
+  }
+
+  void _onRefillToWatch() {
+    // Ocultar el modal de refill y mostrar QuickRefillsWidget
+    setState(() {
+      _showRefillModal = false;
+      _showQuickRefills = true;
+    });
+    // Iniciar la animación de slide desde abajo
+    _slideAnimationController.forward();
+    // El modal sigue visible (QuickRefillsWidget), así que mantener el scroll deshabilitado
+    widget.onModalVisibilityChanged?.call(true);
+  }
+
+  void _onCloseQuickRefills() {
+    // Cerrar QuickRefillsWidget con animación
+    _slideAnimationController.reverse().then((_) {
+      if (mounted) {
+        setState(() {
+          _showQuickRefills = false;
+        });
+        widget.onModalVisibilityChanged?.call(false);
+        widget.onRedirectBack?.call();
+      }
+    });
+  }
+
+  void _onCloseModal() async {
+    setState(() => _isExiting = true);
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (mounted) {
+      setState(() {
+        _showRefillModal = false;
+      });
+      widget.onModalVisibilityChanged?.call(false);
+      widget.onRedirectBack?.call();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        //video player + gradientes
+        SizedBox.expand(
+            child: FullScreenPlayer(
+          videoUrl: widget.videoPost.episodeUrl,
+          caption: widget.videoPost.episodeNumber.toString(),
+          overlay: BlocBuilder<VideoCubit, VideoState>(
+            buildWhen: (previous, current) {
+              // Solo reconstruir cuando cambie el controller o el estado de inicialización
+              return previous.controller != current.controller ||
+                  previous.isInitialized != current.isInitialized;
+            },
+            builder: (context, videoState) {
+              return Positioned(
+                bottom: 20,
+                left: 20,
+                right: 20,
+                child: videoState.controller != null && videoState.isInitialized
+                    ? _VideoProgressBar(
+                        controller: videoState.controller!,
+                      )
+                    : const SizedBox.shrink(),
+              );
+            },
+          ),
+        )),
+
+        // Botón de play/pause usando VideoCubit
+        /*BlocBuilder<VideoCubit, VideoState>(
+          buildWhen: (previous, current) {
+            // Solo reconstruir cuando cambie el estado de reproducción
+            return previous.controller?.value.isPlaying !=
+                current.controller?.value.isPlaying;
+          },
+          builder: (context, videoState) {
+            final isPlaying = videoState.controller?.value.isPlaying ?? false;
+            return Center(
+              child: GestureDetector(
+                onTap: () {
+                  context.read<VideoCubit>().togglePlayPause();
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isPlaying ? Icons.pause : Icons.play_arrow,
+                    color: Colors.white,
+                    size: 48,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),*/
+
+        // botones
+        Positioned(
+          bottom: 40,
+          right: 20,
+          child: VideoButtons(video: widget.videoPost),
+        ),
+        Positioned(
+          bottom: 40,
+          left: 20,
+          right: 80, // Menos espacio para dar más ancho a _VideoInfo
+          child: _VideoInfo(
+            title: 'Flash Marrige ${widget.videoPost.episodeNumber}',
+            description:
+                'A flash marriage" synopsis typically involves a fast, often unexpected marriage between strangers or acquaintances, common in Chinese web novels and dramas like Flash Marriage: The Big Shots Pampered Wife, where a heroine (like Bella) enters a contract marriage with a powerful CEO (Jesse) for convenience (revenge, family, business), only for genuine romance to blossom amidst corporate rivals and challenges, turning their fake union into real love',
+            currentEpisode: widget.videoPost.episodeNumber,
+            totalEpisodes: 11,
+          ),
+        ),
+
+        // Overlay oscuro cuando el modal está visible
+        if ((_showRefillModal || _showQuickRefills) &&
+            widget.videoPost.episodeNumber == 10)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.8),
+            ),
+          ),
+
+        // Modal de Refill
+        if (_showRefillModal && widget.videoPost.episodeNumber == 10)
+          Center(
+            child: Stack(
+              children: [
+                _RefillModal(
+                  episode: widget.videoPost,
+                  onRefillToWatch: _onRefillToWatch,
+                ),
+                // Botón X para cerrar en la esquina superior derecha
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 10,
+                  right: 20,
+                  child: GestureDetector(
+                    onTap: _onCloseModal,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        // QuickRefillsWidget con animación de slide desde abajo
+        if (_showQuickRefills && widget.videoPost.episodeNumber == 10)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: SlideTransition(
+              position: _slideAnimation,
+              child: Stack(
+                children: [
+                  const QuickRefillsWidget(),
+                  // Botón X para cerrar QuickRefillsWidget en la esquina superior derecha
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 10,
+                    right: 20,
+                    child: GestureDetector(
+                      onTap: _onCloseQuickRefills,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -301,6 +563,85 @@ class _VideoProgressBarState extends State<_VideoProgressBar> {
   }
 }
 
+class _RefillModal extends StatelessWidget {
+  final Episode episode;
+  final VoidCallback onRefillToWatch;
+
+  const _RefillModal({
+    required this.episode,
+    required this.onRefillToWatch,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Construir URL de thumbnail de Mux
+    final thumbnailUrl =
+        'https://image.mux.com/${episode.playBlackId}/thumbnail.jpg';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        //col,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Imagen del video
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
+            child: Image.network(
+              thumbnailUrl,
+              width: double.infinity,
+              height: 300,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: double.infinity,
+                  height: 300,
+                  color: Colors.grey[900],
+                  child: const Icon(
+                    Icons.movie_outlined,
+                    color: Colors.grey,
+                    size: 60,
+                  ),
+                );
+              },
+            ),
+          ),
+          // Botón Refill To Watch
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onRefillToWatch,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  'Refill To Watch',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 /*class VideoScrollableView extends StatefulWidget {
   final List<Episode> videos;
 
@@ -643,85 +984,7 @@ class _VideoPageState extends State<_VideoPage> {
 
 
 
-class _RefillModal extends StatelessWidget {
-  final Episode episode;
-  final VoidCallback onRefillToWatch;
-
-  const _RefillModal({
-    required this.episode,
-    required this.onRefillToWatch,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // Construir URL de thumbnail de Mux
-    final thumbnailUrl =
-        'https://image.mux.com/${episode.playBlackId}/thumbnail.jpg';
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        //col,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Imagen del video
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(16),
-              topRight: Radius.circular(16),
-            ),
-            child: Image.network(
-              thumbnailUrl,
-              width: double.infinity,
-              height: 300,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Container(
-                  width: double.infinity,
-                  height: 300,
-                  color: Colors.grey[900],
-                  child: const Icon(
-                    Icons.movie_outlined,
-                    color: Colors.grey,
-                    size: 60,
-                  ),
-                );
-              },
-            ),
-          ),
-          // Botón Refill To Watch
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: onRefillToWatch,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  'Refill To Watch',
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}*/
+*/
 
 /* NOTAS IMPORTANTES
   el page view no se deben cargar mas de tres vistas ya que son recuros de memoria no utilizados

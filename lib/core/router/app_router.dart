@@ -5,6 +5,8 @@ import 'package:quickflix/features/auth/login_screen.dart';
 import 'package:quickflix/features/auth/splash_screen.dart';
 import 'package:quickflix/features/discover/discover_screen.dart';
 import 'package:quickflix/features/home/home_screen.dart';
+import 'package:quickflix/features/profile/privacy_policy_screen.dart';
+import 'package:quickflix/features/profile/terms_of_use_screen.dart';
 import 'package:quickflix/features/widgets/movie_screen.dart';
 import 'package:quickflix/core/router/auth_listener.dart';
 
@@ -79,6 +81,18 @@ GoRouter createAppRouter(AuthCubit authCubit) {
             path: 'discover',
             builder: (context, state) {
               return const DiscoverScreen();
+            },
+          ),
+          GoRoute(
+            path: 'terms-of-use',
+            builder: (context, state) {
+              return const TermsOfUseScreen();
+            },
+          ),
+          GoRoute(
+            path: 'privacy-policy',
+            builder: (context, state) {
+              return const PrivacyPolicyScreen();
             },
           ),
         ],
