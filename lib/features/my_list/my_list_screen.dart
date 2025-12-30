@@ -183,6 +183,8 @@ class _MyListScreenState extends State<MyListScreen>
 
             return MovieItem(
               movie: movie,
+              profileId:
+                  '8057f308-db04-4775-8219-a882a6a4e5d6', // TODO: Obtener del usuario autenticado
               onMovieSelected: (BuildContext context, Movie movie) {
                 // Navegar a la pantalla de detalles del video
                 context.push('/home/0/movie/${movie.id}');

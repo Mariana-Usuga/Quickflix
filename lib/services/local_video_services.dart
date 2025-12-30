@@ -174,4 +174,36 @@ class LocalVideoServices {
       }
     }
   }
+
+  /// Guarda un título en la tabla user_saved
+  /// profile_id es un UUID (String) y title_id es un int
+  Future<void> saveTitle(String profileId, int titleId) async {
+    try {
+      await Supabase.instance.client.from('user_saved').insert({
+        'profile_id': profileId,
+        'title_id': titleId,
+        'added_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e, stackTrace) {
+      print('Error al guardar título en Supabase: $e');
+      print('Stack trace: $stackTrace');
+      throw Exception('Error al guardar título: $e');
+    }
+  }
+
+  /// Elimina un título guardado de la tabla user_saved
+  /// profile_id es un UUID (String) y title_id es un int
+  Future<void> removeSavedTitle(String profileId, int titleId) async {
+    try {
+      await Supabase.instance.client
+          .from('user_saved')
+          .delete()
+          .eq('profile_id', profileId)
+          .eq('title_id', titleId);
+    } catch (e, stackTrace) {
+      print('Error al eliminar título guardado de Supabase: $e');
+      print('Stack trace: $stackTrace');
+      throw Exception('Error al eliminar título guardado: $e');
+    }
+  }
 }

@@ -169,6 +169,47 @@ class MoviesCubit extends Cubit<MoviesState> {
     }
   }
 
+  /// Guarda un video y lo agrega a la lista savedVideos
+  /// profile_id es un UUID (String)
+  Future<void> saveVideo(String profileId, VideoPost video) async {
+    try {
+      // Guardar en la base de datos
+      await localVideoServices.saveTitle(profileId, video.id);
+
+      // Agregar a la lista local si no está ya guardado
+      final currentSavedVideos = List<VideoPost>.from(state.savedVideos);
+      if (!currentSavedVideos.any((v) => v.id == video.id)) {
+        currentSavedVideos.insert(0, video); // Agregar al inicio
+        emit(state.copyWith(savedVideos: currentSavedVideos));
+      }
+    } catch (e) {
+      print('Error al guardar video: $e');
+      rethrow;
+    }
+  }
+
+  /// Elimina un video guardado de la lista savedVideos
+  /// profile_id es un UUID (String)
+  Future<void> removeSavedVideo(String profileId, int titleId) async {
+    try {
+      // Eliminar de la base de datos
+      await localVideoServices.removeSavedTitle(profileId, titleId);
+
+      // Eliminar de la lista local
+      final currentSavedVideos = List<VideoPost>.from(state.savedVideos);
+      currentSavedVideos.removeWhere((v) => v.id == titleId);
+      emit(state.copyWith(savedVideos: currentSavedVideos));
+    } catch (e) {
+      print('Error al eliminar video guardado: $e');
+      rethrow;
+    }
+  }
+
+  /// Verifica si un video está guardado
+  bool isVideoSaved(int titleId) {
+    return state.savedVideos.any((video) => video.id == titleId);
+  }
+
   @override
   Future<void> close() async {
     await _disposeVideo();

@@ -71,6 +71,8 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
           itemCount: movies.length,
           itemBuilder: (context, index) => MovieItem(
             movie: movies[index],
+            profileId:
+                '8057f308-db04-4775-8219-a882a6a4e5d6', // TODO: Obtener del usuario autenticado
             onMovieSelected: (BuildContext context, Movie movie) {
               clearStreams();
               // Navegar a MovieScreen y cerrar el search
@@ -141,5 +143,3 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
     return buildResultsAndSuggestions();
   }
 }
-
-
