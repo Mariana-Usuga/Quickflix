@@ -210,6 +210,28 @@ class MoviesCubit extends Cubit<MoviesState> {
     return state.savedVideos.any((video) => video.id == titleId);
   }
 
+  /// Obtiene los videos en progreso según el profile_id
+  /// profile_id es un UUID (String)
+  Future<void> loadWatchingVideosByProfileId(String profileId) async {
+    try {
+      emit(state.copyWith(isLoading: true));
+
+      final watchingVideos =
+          await localVideoServices.getWatchingVideosByProfileId(profileId);
+
+      emit(state.copyWith(
+        watchingVideos: watchingVideos,
+        isLoading: false,
+      ));
+    } catch (e) {
+      print('Error al cargar videos en progreso: $e');
+      emit(state.copyWith(
+        isLoading: false,
+        watchingVideos: [],
+      ));
+    }
+  }
+
   @override
   Future<void> close() async {
     await _disposeVideo();

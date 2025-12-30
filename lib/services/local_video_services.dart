@@ -206,4 +206,87 @@ class LocalVideoServices {
       throw Exception('Error al eliminar título guardado: $e');
     }
   }
+
+  /// Obtiene los videos en progreso según el profile_id desde la tabla user_progress
+  /// profile_id es un UUID (String)
+  Future<List<VideoPost>> getWatchingVideosByProfileId(String profileId) async {
+    try {
+      // Intentar usar un join para obtener los títulos directamente desde user_progress
+      final response =
+          await Supabase.instance.client.from('user_progress').select('''
+            title_id,
+            titles!inner(*)
+          ''').eq('profile_id', profileId);
+      //.order('updated_at', ascending: false);
+
+      if (response.isEmpty) {
+        return [];
+      }
+
+      // Extraer los datos de titles del join
+      final List<VideoPost> videos = (response as List)
+          .map((item) {
+            // El join devuelve los datos de titles anidados
+            final titleData = item['titles'] as Map<String, dynamic>?;
+            if (titleData == null) return null;
+
+            return LocalVideoModel.fromJson(titleData).toVideoPostEntity();
+          })
+          .whereType<VideoPost>()
+          .toList();
+
+      return videos;
+    } catch (e) {
+      // Si el join falla, intentar método alternativo con consultas separadas
+      try {
+        // Obtener los title_id en progreso para el profile_id desde user_progress
+        final progressResponse = await Supabase.instance.client
+            .from('user_progress')
+            .select('title_id')
+            .eq('profile_id', profileId);
+        //.order('updated_at', ascending: false);
+
+        if (progressResponse.isEmpty) {
+          return [];
+        }
+
+        // Extraer los title_id de los resultados
+        final List<int> titleIds = (progressResponse as List)
+            .map((item) => item['title_id'] as int? ?? 0)
+            .where((id) => id > 0)
+            .toList();
+
+        if (titleIds.isEmpty) {
+          return [];
+        }
+
+        // Obtener los títulos uno por uno o en lotes
+        final List<VideoPost> videos = [];
+        for (final titleId in titleIds) {
+          try {
+            final titleResponse = await Supabase.instance.client
+                .from('titles')
+                .select()
+                .eq('id', titleId)
+                .single();
+
+            final video = LocalVideoModel.fromJson(
+                    Map<String, dynamic>.from(titleResponse))
+                .toVideoPostEntity();
+            videos.add(video);
+          } catch (_) {
+            // Continuar con el siguiente si hay error
+            continue;
+          }
+        }
+
+        return videos;
+      } catch (e2, stackTrace2) {
+        // Imprimir error completo para debugging
+        print('Error al obtener videos en progreso de Supabase: $e2');
+        print('Stack trace: $stackTrace2');
+        throw Exception('Error al obtener videos en progreso de Supabase: $e2');
+      }
+    }
+  }
 }

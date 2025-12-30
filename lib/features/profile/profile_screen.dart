@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:quickflix/core/router/app_router.dart';
-import 'package:quickflix/features/widgets/home/bottom_navigation_bar.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -19,67 +17,74 @@ class ProfileScreen extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // App logo
                   Image.asset(
-                    'assets/logo.png',
+                    'assets/clipsyLogo1.png',
                     height: 28,
                   ),
-                  const SizedBox(width: 8),
                   Text(
                     'Profile',
-                    style: theme.textTheme.titleMedium?.copyWith(
+                    style: GoogleFonts.inter(
                       color: Colors.white,
+                      fontSize: 17,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const Spacer(),
-                  // Notification icon with badge
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.notifications_none,
-                          color: Colors.white,
-                        ),
-                        onPressed: () {},
-                      ),
-                      Positioned(
-                        right: 6,
-                        top: 4,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.shade700,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(
-                                Icons.local_fire_department,
-                                size: 12,
-                                color: Colors.white,
-                              ),
-                              SizedBox(width: 2),
-                              Text(
-                                '50',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'Space notifita',
+                    style: TextStyle(color: Colors.black),
                   ),
+                  // Notification icon with badge
+                  /*Visibility(
+                    visible: true,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.notifications_none,
+                            color: Colors.white,
+                          ),
+                          onPressed: () {},
+                        ),
+                        Positioned(
+                          right: 6,
+                          top: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade700,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(
+                                  Icons.local_fire_department,
+                                  size: 12,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(width: 2),
+                                Text(
+                                  '50',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),*/
                 ],
               ),
             ),

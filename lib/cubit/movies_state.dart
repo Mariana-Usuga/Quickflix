@@ -6,6 +6,7 @@ class MoviesState {
   final List<Episode> episodes;
   final List<VideoPost> videos;
   final List<VideoPost> savedVideos;
+  final List<VideoPost> watchingVideos;
   final VideoPost? selectedMovie;
   final bool isLastPage;
   final int limit;
@@ -20,6 +21,7 @@ class MoviesState {
     this.episodes = const [],
     this.videos = const [],
     this.savedVideos = const [],
+    this.watchingVideos = const [],
     this.isLastPage = false,
     this.selectedMovie,
     this.limit = 10,
@@ -35,6 +37,7 @@ class MoviesState {
     List<Episode>? episodes,
     List<VideoPost>? videos,
     List<VideoPost>? savedVideos,
+    List<VideoPost>? watchingVideos,
     VideoPost? selectedMovie,
     bool? isLastPage,
     int? limit,
@@ -49,6 +52,7 @@ class MoviesState {
       episodes: episodes ?? this.episodes,
       videos: videos ?? this.videos,
       savedVideos: savedVideos ?? this.savedVideos,
+      watchingVideos: watchingVideos ?? this.watchingVideos,
       selectedMovie: selectedMovie ?? this.selectedMovie,
       isLastPage: isLastPage ?? this.isLastPage,
       limit: limit ?? this.limit,

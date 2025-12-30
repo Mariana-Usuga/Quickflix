@@ -23,10 +23,12 @@ class _MyListScreenState extends State<MyListScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    // Cargar los videos guardados cuando se inicializa el widget
-    context
-        .read<MoviesCubit>()
-        .loadSavedVideosByProfileId('8057f308-db04-4775-8219-a882a6a4e5d6');
+    final profileId =
+        '8057f308-db04-4775-8219-a882a6a4e5d6'; // TODO: Obtener del usuario autenticado
+    final cubit = context.read<MoviesCubit>();
+    // Cargar los videos guardados y en progreso cuando se inicializa el widget
+    cubit.loadSavedVideosByProfileId(profileId);
+    cubit.loadWatchingVideosByProfileId(profileId);
   }
 
   @override
@@ -45,16 +47,17 @@ class _MyListScreenState extends State<MyListScreen>
           children: [
             // Top bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: [
                   // Heart icon
-                  const Icon(
-                    Icons.favorite,
-                    color: Colors.white,
-                    size: 24,
+                  Image.asset(
+                    'assets/clipsyLogo1.png',
+                    //width: logoSize,
+                    //height: logoSize,
+                    fit: BoxFit.contain,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 40),
                   // Title
                   Text(
                     'My List',
@@ -65,17 +68,17 @@ class _MyListScreenState extends State<MyListScreen>
                   ),
                   const Spacer(),
                   // Notification icon
-                  IconButton(
+                  /*IconButton(
                     icon: const Icon(
                       Icons.notifications_outlined,
                       color: Colors.white,
                       size: 24,
                     ),
                     onPressed: () {},
-                  ),
+                  ),*/
                   const SizedBox(width: 8),
                   // Wallet icon with badge
-                  Stack(
+                  /*Stack(
                     clipBehavior: Clip.none,
                     children: [
                       IconButton(
@@ -109,7 +112,7 @@ class _MyListScreenState extends State<MyListScreen>
                         ),
                       ),
                     ],
-                  ),
+                  ),*/
                 ],
               ),
             ),
@@ -197,16 +200,46 @@ class _MyListScreenState extends State<MyListScreen>
   }
 
   /// Construye la lista de videos en reproducción para la pestaña "Watching"
+  /// Usa MovieItem para mostrar cada video en progreso
   Widget _buildWatchingList() {
-    // TODO: Implementar la lógica para videos en reproducción
-    return const Center(
-      child: Text(
-        'Watching list coming soon',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-        ),
-      ),
+    return BlocBuilder<MoviesCubit, MoviesState>(
+      builder: (context, state) {
+        if (state.isLoading) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        if (state.watchingVideos.isEmpty) {
+          return const Center(
+            child: Text(
+              'No videos in progress',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: state.watchingVideos.length,
+          itemBuilder: (context, index) {
+            final videoPost = state.watchingVideos[index];
+            final movie = Movie.fromVideoPost(videoPost);
+
+            return MovieItem(
+              movie: movie,
+              profileId:
+                  '8057f308-db04-4775-8219-a882a6a4e5d6', // TODO: Obtener del usuario autenticado
+              onMovieSelected: (BuildContext context, Movie movie) {
+                // Navegar a la pantalla de detalles del video
+                context.push('/home/0/movie/${movie.id}');
+              },
+            );
+          },
+        );
+      },
     );
   }
 }
