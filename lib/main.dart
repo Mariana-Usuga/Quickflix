@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:quickflix/cubit/movies_cubit.dart';
 import 'package:quickflix/features/auth/cubit/auth_cubit.dart';
+import 'package:quickflix/features/profile/cubit/profile_cubit.dart';
 import 'package:quickflix/features/widgets/video/cubit/video_cubit.dart';
 import 'package:quickflix/services/local_video_services.dart';
 import 'package:quickflix/core/services/supabase_service.dart';
@@ -37,6 +38,9 @@ void main() async {
   runApp(MultiBlocProvider(providers: [
     BlocProvider.value(value: authCubit),
     BlocProvider(create: (context) => VideoCubit()),
+    BlocProvider(
+        create: (context) =>
+            ProfileCubit(localVideoServices: localVideoServices)),
     BlocProvider(
       create: (context) => MoviesCubit(localVideoServices: localVideoServices),
     ),

@@ -487,7 +487,7 @@ class _VideoProgressBarState extends State<_VideoProgressBar> {
   @override
   void initState() {
     super.initState();
-    _startTimer();
+    //_startTimer();
   }
 
   @override
@@ -495,7 +495,7 @@ class _VideoProgressBarState extends State<_VideoProgressBar> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
       _cancelTimer();
-      _startTimer();
+      //_startTimer();
     }
   }
 
@@ -505,13 +505,21 @@ class _VideoProgressBarState extends State<_VideoProgressBar> {
     super.dispose();
   }
 
-  void _startTimer() {
+  /*void _startTimer() {
+    _cancelTimer(); // Asegurarse de cancelar cualquier timer anterior
+    if (!mounted) return; // Si el widget no está montado, no iniciar el timer
+
     _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-      if (mounted && widget.controller.value.isInitialized) {
+      if (!mounted) {
+        // Si el widget se desmontó, cancelar el timer
+        timer.cancel();
+        return;
+      }
+      if (widget.controller.value.isInitialized) {
         setState(() {});
       }
     });
-  }
+  }*/
 
   void _cancelTimer() {
     _timer?.cancel();

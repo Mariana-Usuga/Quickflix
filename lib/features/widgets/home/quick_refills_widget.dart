@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:quickflix/features/profile/cubit/profile_cubit.dart';
 import 'package:quickflix/features/widgets/home/cubit/quick_refills_cubit.dart';
+import 'package:quickflix/features/widgets/shared/get_coins_from_package.dart';
 
 class QuickRefillsWidget extends StatelessWidget {
   const QuickRefillsWidget({super.key});
@@ -20,22 +22,44 @@ class _QuickRefillsContent extends StatelessWidget {
   const _QuickRefillsContent();
 
   Future<void> _handlePurchase(BuildContext context, Package package) async {
-    final cubit = context.read<QuickRefillsCubit>();
+    // 1. CAPTURAR los Cubits ANTES del await
+    // Al guardarlos en variables, ya no dependemos del context después del await
+    final quickRefillsCubit = context.read<QuickRefillsCubit>();
+    final profileCubit = context.read<ProfileCubit>();
+    final userId =
+        '8057f308-db04-4775-8219-a882a6a4e5d6'; //profileCubit.state.profile?.id;
+
     try {
-      await cubit.purchasePackage(package);
+      // 2. Ejecutar la compra directamente con RevenueCat
+      final purchaserInfo = await Purchases.purchasePackage(package);
+
+      // 3. Actualizar la información del cliente en el cubit después de la compra
+      quickRefillsCubit.updateCustomerInfo(purchaserInfo.customerInfo);
+
+      // 4. ACTUALIZAR DATOS (Esto se ejecuta siempre, aunque el widget no esté visible)
+      if (userId != null) {
+        final coinsToAdd = getCoinsFromPackage(package);
+        if (coinsToAdd > 0) {
+          // Ejecutamos la suma de monedas en la DB
+          await profileCubit.addCoins(userId, coinsToAdd);
+        }
+      }
+
+      // 5. SOLO PARA LA UI: Usamos mounted
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Successful purchase'),
+            content: Text('Purchase successful! Coins added.'),
             backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
+      print('Error en compra: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error en la compra: ${e.toString()}'),
+            content: Text('Error: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );

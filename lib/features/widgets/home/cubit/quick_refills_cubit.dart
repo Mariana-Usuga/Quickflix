@@ -59,5 +59,9 @@ class QuickRefillsCubit extends Cubit<QuickRefillsState> {
       rethrow;
     }
   }
-}
 
+  /// Actualiza el customerInfo en el estado sin hacer una compra
+  void updateCustomerInfo(CustomerInfo customerInfo) {
+    emit(state.copyWith(customerInfo: customerInfo));
+  }
+}

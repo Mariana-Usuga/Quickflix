@@ -308,4 +308,24 @@ class LocalVideoServices {
       throw Exception('Error al obtener perfil: $e');
     }
   }
+
+  /// Actualiza las coins del perfil del usuario
+  /// profileId es un UUID (String)
+  /// coinsToAdd es la cantidad de coins a agregar (sumar al valor actual)
+  Future<void> addCoinsToProfile(String profileId, int coinsToAdd) async {
+    try {
+      // Primero obtener el perfil actual para obtener las coins actuales
+      final currentProfile = await getProfileById(profileId);
+      final newCoins = currentProfile.coins + coinsToAdd;
+
+      // Actualizar las coins en Supabase
+      await Supabase.instance.client
+          .from('profiles')
+          .update({'coins': newCoins}).eq('id', profileId);
+    } catch (e, stackTrace) {
+      print('Error al actualizar coins del perfil: $e');
+      print('Stack trace: $stackTrace');
+      throw Exception('Error al actualizar coins: $e');
+    }
+  }
 }

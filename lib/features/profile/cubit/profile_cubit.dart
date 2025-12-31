@@ -29,5 +29,23 @@ class ProfileCubit extends Cubit<ProfileState> {
       ));
     }
   }
-}
 
+  /// Agrega coins al perfil del usuario
+  Future<void> addCoins(String userId, int coins) async {
+    try {
+      emit(state.copyWith(isLoading: true));
+
+      // Actualizar las coins en la base de datos
+      await localVideoServices.addCoinsToProfile(userId, coins);
+
+      // Recargar el perfil para obtener el valor actualizado
+      await loadUserProfile(userId);
+    } catch (e) {
+      print('Error al agregar coins: $e');
+      emit(state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      ));
+    }
+  }
+}
