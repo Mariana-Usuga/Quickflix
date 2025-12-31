@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:quickflix/cubit/movies_cubit.dart';
 import 'package:quickflix/features/widgets/home/movie_horizontal_listview.dart';
+import 'package:quickflix/models/episodes.dart';
+import 'package:quickflix/models/season.dart';
 import 'package:quickflix/models/video_post.dart';
 
 class MovieScreen extends StatefulWidget {
@@ -25,7 +27,12 @@ class MovieScreenState extends State<MovieScreen> {
   @override
   void initState() {
     super.initState();
-    context.read<MoviesCubit>().getMovieById(int.parse(widget.movieId));
+    final moviesCubit = context.read<MoviesCubit>();
+    final titleId = int.parse(widget.movieId);
+    moviesCubit.getMovieById(titleId);
+    // Cargar temporadas y episodios cuando se carga la película
+    moviesCubit.loadSeasons(titleId);
+    moviesCubit.loadEpisodes(titleId);
   }
 
   @override
@@ -79,9 +86,23 @@ class _ContentDetails extends StatefulWidget {
 }
 
 class _ContentDetailsState extends State<_ContentDetails> {
-  int selectedSeason = 4;
+  int? selectedSeasonId;
   int selectedEpisode = 1;
   bool isSynopsisExpanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicializar selectedSeasonId cuando se carguen las temporadas
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final moviesCubit = context.read<MoviesCubit>();
+      if (moviesCubit.state.seasons.isNotEmpty) {
+        setState(() {
+          selectedSeasonId = moviesCubit.state.seasons.first.id;
+        });
+      }
+    });
+  }
 
   String _formatLikes(int likes) {
     if (likes >= 1000) {
@@ -201,75 +222,124 @@ class _ContentDetailsState extends State<_ContentDetails> {
             ]),
           ),
 
-          // Navegación de Temporadas
-          Container(
-            margin: const EdgeInsets.only(left: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (widget.movie.numberOfSeasons > 0) ...[
-                  SizedBox(
-                    height: 40,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: widget.movie.numberOfSeasons,
-                      itemBuilder: (context, index) {
-                        final seasonNumber =
-                            widget.movie.numberOfSeasons - index;
-                        final isSelected = seasonNumber == selectedSeason;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          child: _SeasonButton(
-                            label: 'Season $seasonNumber',
-                            isSelected: isSelected,
-                            onTap: () {
-                              setState(() {
-                                selectedSeason = seasonNumber;
-                                selectedEpisode = 1;
-                              });
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
+          // Navegación de Temporadas y Episodios
+          BlocBuilder<MoviesCubit, MoviesState>(
+            builder: (context, state) {
+              final seasons = state.seasons;
+              final allEpisodes = state.episodes;
 
-                // Episodios
-                Text(
-                  'Episodes',
-                  style: textStyles.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 60,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: 10, // Asumiendo 10 episodios por temporada
-                    itemBuilder: (context, index) {
-                      final episodeNumber = index + 1;
-                      final isSelected = episodeNumber == selectedEpisode;
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: _EpisodeButton(
-                          number: episodeNumber,
-                          isSelected: isSelected,
-                          onTap: () {
-                            setState(() {
-                              selectedEpisode = episodeNumber;
-                            });
+              // Filtrar episodios por temporada seleccionada
+              Season? selectedSeason;
+              if (selectedSeasonId != null && seasons.isNotEmpty) {
+                try {
+                  selectedSeason = seasons.firstWhere(
+                    (s) => s.id == selectedSeasonId,
+                  );
+                } catch (e) {
+                  // Si no se encuentra la temporada seleccionada, usar la primera
+                  selectedSeason = seasons.first;
+                  selectedSeasonId = selectedSeason.id;
+                }
+              } else if (seasons.isNotEmpty) {
+                selectedSeason = seasons.first;
+                selectedSeasonId = selectedSeason.id;
+              }
+
+              final episodesForSeason = selectedSeason != null
+                  ? allEpisodes
+                      .where((ep) => ep.seasonId == selectedSeason!.id)
+                      .toList()
+                  : <Episode>[];
+
+              // Inicializar selectedSeasonId si no está establecido
+              if (selectedSeasonId == null && seasons.isNotEmpty && selectedSeason != null) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    setState(() {
+                      selectedSeasonId = selectedSeason!.id;
+                    });
+                  }
+                });
+              }
+
+              return Container(
+                margin: const EdgeInsets.only(left: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Navegación de Temporadas
+                    if (seasons.isNotEmpty) ...[
+                      SizedBox(
+                        height: 40,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: seasons.length,
+                          itemBuilder: (context, index) {
+                            final season = seasons[index];
+                            final isSelected = season.id == selectedSeasonId;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: _SeasonButton(
+                                label: season.name,
+                                isSelected: isSelected,
+                                onTap: () {
+                                  setState(() {
+                                    selectedSeasonId = season.id;
+                                    selectedEpisode = 1;
+                                  });
+                                },
+                              ),
+                            );
                           },
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                      const SizedBox(height: 24),
+                    ],
+
+                    // Episodios
+                    Text(
+                      'Episodes',
+                      style: textStyles.titleLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      height: 60,
+                      child: episodesForSeason.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No episodes available',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            )
+                          : ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: episodesForSeason.length,
+                              itemBuilder: (context, index) {
+                                final episode = episodesForSeason[index];
+                                final isSelected =
+                                    episode.episodeNumber == selectedEpisode;
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 12),
+                                  child: _EpisodeButton(
+                                    number: episode.episodeNumber,
+                                    isSelected: isSelected,
+                                    onTap: () {
+                                      setState(() {
+                                        selectedEpisode = episode.episodeNumber;
+                                      });
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           )
         ],
       ),

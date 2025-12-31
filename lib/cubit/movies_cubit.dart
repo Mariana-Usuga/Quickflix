@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:quickflix/models/episodes.dart';
+import 'package:quickflix/models/season.dart';
 import 'package:quickflix/models/video_post.dart';
 import 'package:quickflix/services/local_video_services.dart';
 import 'package:video_player/video_player.dart';
@@ -32,6 +33,26 @@ class MoviesCubit extends Cubit<MoviesState> {
     ));
   }
 
+  /// Carga las temporadas según el title_id
+  Future<void> loadSeasons(int titleId) async {
+    try {
+      emit(state.copyWith(isLoading: true));
+
+      final seasons = await localVideoServices.getSeasonsByTitleId(titleId);
+
+      emit(state.copyWith(
+        seasons: seasons,
+        isLoading: false,
+      ));
+    } catch (e) {
+      print('Error al cargar temporadas: $e');
+      emit(state.copyWith(
+        isLoading: false,
+        seasons: [],
+      ));
+    }
+  }
+
   Future<void> loadEpisodes(int titleId) async {
     try {
       emit(state.copyWith(isLoading: true));
@@ -39,15 +60,9 @@ class MoviesCubit extends Cubit<MoviesState> {
       final newEpisodes =
           await localVideoServices.getEpisodesByTitleId(titleId);
 
-      // Solo tomar los últimos 5 episodios para desarrollo
-      final lastFiveEpisodes = newEpisodes.length > 5
-          ? newEpisodes.sublist(newEpisodes.length - 5)
-          : newEpisodes;
-
-      final orderedEpisodes = [
-        ...state.episodes,
-        ...lastFiveEpisodes,
-      ]..sort((a, b) => a.episodeNumber.compareTo(b.episodeNumber));
+      // Ordenar episodios por número de episodio
+      final orderedEpisodes = [...newEpisodes]
+        ..sort((a, b) => a.episodeNumber.compareTo(b.episodeNumber));
 
       emit(state.copyWith(
         episodes: orderedEpisodes,

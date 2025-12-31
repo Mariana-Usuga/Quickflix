@@ -8,6 +8,7 @@ class EpisodeModel {
   final int priceCoins;
   final String playBlackId;
   final String episodeUrl;
+  final int? seasonId;
 
   EpisodeModel({
     required this.id,
@@ -17,6 +18,7 @@ class EpisodeModel {
     required this.priceCoins,
     required this.playBlackId,
     required this.episodeUrl,
+    this.seasonId,
   });
 
   factory EpisodeModel.fromJson(Map<String, dynamic> json) {
@@ -39,6 +41,7 @@ class EpisodeModel {
       priceCoins: json['price_coins'] as int? ?? 0,
       playBlackId: json['play_black_id'] as String? ?? '',
       episodeUrl: _buildMuxVideoUrl(json['play_black_id']),
+      seasonId: json['season_id'] as int?,
     );
   }
 
@@ -68,5 +71,6 @@ class EpisodeModel {
         priceCoins: priceCoins,
         playBlackId: playBlackId,
         episodeUrl: episodeUrl,
+        seasonId: seasonId,
       );
 }

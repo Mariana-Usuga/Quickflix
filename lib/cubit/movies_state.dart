@@ -4,6 +4,7 @@ enum LoadingStatus { initial, loading, success, failure }
 
 class MoviesState {
   final List<Episode> episodes;
+  final List<Season> seasons;
   final List<VideoPost> videos;
   final List<VideoPost> savedVideos;
   final List<VideoPost> watchingVideos;
@@ -19,6 +20,7 @@ class MoviesState {
 
   const MoviesState({
     this.episodes = const [],
+    this.seasons = const [],
     this.videos = const [],
     this.savedVideos = const [],
     this.watchingVideos = const [],
@@ -35,6 +37,7 @@ class MoviesState {
 
   MoviesState copyWith({
     List<Episode>? episodes,
+    List<Season>? seasons,
     List<VideoPost>? videos,
     List<VideoPost>? savedVideos,
     List<VideoPost>? watchingVideos,
@@ -50,6 +53,7 @@ class MoviesState {
   }) {
     return MoviesState(
       episodes: episodes ?? this.episodes,
+      seasons: seasons ?? this.seasons,
       videos: videos ?? this.videos,
       savedVideos: savedVideos ?? this.savedVideos,
       watchingVideos: watchingVideos ?? this.watchingVideos,
