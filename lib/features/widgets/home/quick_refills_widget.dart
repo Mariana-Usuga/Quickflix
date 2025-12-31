@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:quickflix/features/auth/cubit/auth_cubit.dart';
 import 'package:quickflix/features/profile/cubit/profile_cubit.dart';
 import 'package:quickflix/features/widgets/home/cubit/quick_refills_cubit.dart';
 import 'package:quickflix/features/widgets/shared/get_coins_from_package.dart';
@@ -26,9 +27,9 @@ class _QuickRefillsContent extends StatelessWidget {
     // Al guardarlos en variables, ya no dependemos del context después del await
     final quickRefillsCubit = context.read<QuickRefillsCubit>();
     final profileCubit = context.read<ProfileCubit>();
-    final userId =
-        '8057f308-db04-4775-8219-a882a6a4e5d6'; //profileCubit.state.profile?.id;
-
+    //final authState = context.read<AuthCubit>().state;
+    //final userId = authState is AuthSuccess ? authState.user.id : null;
+    final userId = '8057f308-db04-4775-8219-a882a6a4e5d6';
     try {
       // 2. Ejecutar la compra directamente con RevenueCat
       final purchaserInfo = await Purchases.purchasePackage(package);
@@ -42,10 +43,14 @@ class _QuickRefillsContent extends StatelessWidget {
         if (coinsToAdd > 0) {
           // Ejecutamos la suma de monedas en la DB
           await profileCubit.addCoins(userId, coinsToAdd);
+
+          // 5. Después de agregar las monedas, descontar el costo del episodio (2 monedas)
+          const coinsPerEpisode = 2;
+          await profileCubit.subtractCoins(userId, coinsPerEpisode);
         }
       }
 
-      // 5. SOLO PARA LA UI: Usamos mounted
+      // 6. SOLO PARA LA UI: Usamos mounted
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

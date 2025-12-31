@@ -48,4 +48,28 @@ class ProfileCubit extends Cubit<ProfileState> {
       ));
     }
   }
+
+  /// Resta coins del perfil del usuario
+  /// Retorna true si se pudo restar, false si no tiene suficientes coins
+  Future<bool> subtractCoins(String userId, int coins) async {
+    try {
+      emit(state.copyWith(isLoading: true));
+
+      // Restar las coins en la base de datos
+      final success =
+          await localVideoServices.subtractCoinsFromProfile(userId, coins);
+
+      // Recargar el perfil para obtener el valor actualizado
+      await loadUserProfile(userId);
+
+      return success;
+    } catch (e) {
+      print('Error al restar coins: $e');
+      emit(state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      ));
+      return false;
+    }
+  }
 }

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:quickflix/features/auth/cubit/auth_cubit.dart';
+import 'package:quickflix/features/profile/cubit/profile_cubit.dart';
 import 'package:quickflix/features/widgets/home/quick_refills_widget.dart';
 import 'package:quickflix/features/widgets/shared/video_buttons.dart';
 import 'package:quickflix/features/widgets/video/cubit/video_cubit.dart';
@@ -50,33 +52,62 @@ class _VideoScrollableViewState extends State<VideoScrollableView> {
     });
   }
 
+  /// Verifica si se debe bloquear el scroll basado en el episodio y las monedas
+  bool _shouldBlockScroll(int episodeNumber) {
+    // Validar primero episodeNumber >= 10 (a partir del episodio 10)
+    final isEpisode10OrHigher = episodeNumber >= 10;
+
+    // Luego validar las monedas
+    final profileCubit = context.read<ProfileCubit>();
+    final profile = profileCubit.state.profile;
+    const coinsPerEpisode = 2;
+    final hasEnoughCoins = profile != null && profile.coins >= coinsPerEpisode;
+
+    // Bloquear scroll si:
+    // Es episodio 10 o superior Y no tiene suficientes monedas
+    if (isEpisode10OrHigher && !hasEnoughCoins) {
+      return true;
+    }
+
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return PageView.builder(
-      controller: _pageController,
-      scrollDirection: Axis.vertical,
-      // Deshabilitar scroll si el modal está visible o si está en el episodio 10
-      physics: (_isModalVisible ||
-              (_currentIndex < widget.videos.length &&
-                  widget.videos[_currentIndex].episodeNumber == 10))
-          ? const NeverScrollableScrollPhysics()
-          : BouncingScrollPhysics(),
-      onPageChanged: _onPageChanged,
-      itemCount: widget.videos.length,
-      itemBuilder: (context, index) {
-        final Episode videoPost = widget.videos[index];
+    // Usar BlocBuilder para escuchar cambios en ProfileCubit (cuando cambian las monedas)
+    return BlocBuilder<ProfileCubit, ProfileState>(
+      builder: (context, profileState) {
+        // Verificar si se debe bloquear el scroll para el episodio actual
+        final currentEpisode = _currentIndex < widget.videos.length
+            ? widget.videos[_currentIndex].episodeNumber
+            : 0;
+        final shouldBlockScroll = _shouldBlockScroll(currentEpisode);
 
-        return _VideoPage(
-          videoPost: videoPost,
-          onModalVisibilityChanged: _onModalVisibilityChanged,
-          onRedirectBack: () {
-            if (index > 0) {
-              _pageController.animateToPage(
-                index - 1,
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeInOutCubic,
-              );
-            }
+        return PageView.builder(
+          controller: _pageController,
+          scrollDirection: Axis.vertical,
+          // Deshabilitar scroll si el modal está visible o si no hay suficientes monedas
+          physics: (_isModalVisible || shouldBlockScroll)
+              ? const NeverScrollableScrollPhysics()
+              : BouncingScrollPhysics(),
+          onPageChanged: _onPageChanged,
+          itemCount: widget.videos.length,
+          itemBuilder: (context, index) {
+            final Episode videoPost = widget.videos[index];
+
+            return _VideoPage(
+              videoPost: videoPost,
+              onModalVisibilityChanged: _onModalVisibilityChanged,
+              onRedirectBack: () {
+                if (index > 0) {
+                  _pageController.animateToPage(
+                    index - 1,
+                    duration: const Duration(milliseconds: 400),
+                    curve: Curves.easeInOutCubic,
+                  );
+                }
+              },
+            );
           },
         );
       },
@@ -124,19 +155,90 @@ class _VideoPageState extends State<_VideoPage>
       curve: Curves.easeOutCubic,
     ));
 
-    // Si es el episodio 10, iniciar timer para mostrar el modal después de 2 segundos
+    // Validar primero el episodio 10, luego las monedas
     if (widget.videoPost.episodeNumber == 10) {
       _timer = Timer(const Duration(seconds: 2), () {
         if (mounted) {
-          // Pausar el video
-          context.read<VideoCubit>().togglePlayPause();
-          setState(() {
-            _showRefillModal = true;
-          });
-          widget.onModalVisibilityChanged?.call(true);
+          _validateCoinsAndShowModal();
+        }
+      });
+    } else if (widget.videoPost.episodeNumber >= 10) {
+      // Para episodios 10 o superior, validar monedas inmediatamente
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _validateCoinsAndShowModal();
         }
       });
     }
+  }
+
+  /// Valida si el usuario tiene suficientes monedas (2 por episodio)
+  /// Si no tiene, muestra el modal de refill
+  void _validateCoinsAndShowModal() {
+    if (!mounted) return;
+
+    const coinsPerEpisode = 2;
+    final profileCubit = context.read<ProfileCubit>();
+    final profile = profileCubit.state.profile;
+
+    // Si no hay perfil cargado, intentar cargarlo primero
+    if (profile == null) {
+      final authState = context.read<AuthCubit>().state;
+      if (authState is AuthSuccess) {
+        profileCubit.loadUserProfile(authState.user.id).then((_) {
+          if (mounted) {
+            final updatedProfile = profileCubit.state.profile;
+            if (updatedProfile == null ||
+                updatedProfile.coins < coinsPerEpisode) {
+              _displayRefillModal();
+            }
+          }
+        });
+      } else {
+        // Si no está autenticado, mostrar modal
+        _displayRefillModal();
+      }
+      return;
+    }
+
+    // Validar si tiene suficientes monedas
+    if (profile.coins < coinsPerEpisode) {
+      _displayRefillModal();
+    }
+  }
+
+  /// Muestra el modal de refill y pausa el video
+  void _displayRefillModal() {
+    if (!mounted) return;
+
+    // Pausar el video
+    context.read<VideoCubit>().togglePlayPause();
+    setState(() {
+      _showRefillModal = true;
+    });
+    widget.onModalVisibilityChanged?.call(true);
+  }
+
+  /// Verifica si se debe mostrar el modal
+  /// Primero valida episodeNumber == 10, luego las monedas
+  bool _shouldShowModal() {
+    // Validar primero episodeNumber >= 10 (a partir del episodio 10)
+    final isEpisode10OrHigher = widget.videoPost.episodeNumber >= 10;
+
+    // Luego validar las monedas
+    final profileCubit = context.read<ProfileCubit>();
+    final profile = profileCubit.state.profile;
+    const coinsPerEpisode = 2;
+    final hasEnoughCoins = profile != null && profile.coins >= coinsPerEpisode;
+
+    // Mostrar modal si:
+    // 1. Es episodio 10 Y no tiene suficientes monedas
+    // 2. O si no tiene suficientes monedas (a partir del episodio 10, es decir, episodio 10 o superior)
+    if (isEpisode10OrHigher && !hasEnoughCoins) {
+      return true;
+    }
+
+    return false;
   }
 
   @override
@@ -264,8 +366,7 @@ class _VideoPageState extends State<_VideoPage>
         ),
 
         // Overlay oscuro cuando el modal está visible
-        if ((_showRefillModal || _showQuickRefills) &&
-            widget.videoPost.episodeNumber == 10)
+        if ((_showRefillModal || _showQuickRefills) && _shouldShowModal())
           Positioned.fill(
             child: Container(
               color: Colors.black.withOpacity(0.8),
@@ -273,7 +374,8 @@ class _VideoPageState extends State<_VideoPage>
           ),
 
         // Modal de Refill
-        if (_showRefillModal && widget.videoPost.episodeNumber == 10)
+        // Validar primero episodeNumber == 10, luego las monedas
+        if (_showRefillModal && _shouldShowModal())
           Center(
             child: Stack(
               children: [
@@ -306,7 +408,7 @@ class _VideoPageState extends State<_VideoPage>
           ),
 
         // QuickRefillsWidget con animación de slide desde abajo
-        if (_showQuickRefills && widget.videoPost.episodeNumber == 10)
+        if (_showQuickRefills && _shouldShowModal())
           Positioned(
             bottom: 0,
             left: 0,

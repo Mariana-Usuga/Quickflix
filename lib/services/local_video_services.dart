@@ -328,4 +328,34 @@ class LocalVideoServices {
       throw Exception('Error al actualizar coins: $e');
     }
   }
+
+  /// Resta coins del perfil del usuario
+  /// profileId es un UUID (String)
+  /// coinsToSubtract es la cantidad de coins a restar (restar al valor actual)
+  /// Retorna true si se pudo restar, false si no tiene suficientes coins
+  Future<bool> subtractCoinsFromProfile(
+      String profileId, int coinsToSubtract) async {
+    try {
+      // Primero obtener el perfil actual para obtener las coins actuales
+      final currentProfile = await getProfileById(profileId);
+
+      // Verificar si tiene suficientes coins
+      if (currentProfile.coins < coinsToSubtract) {
+        return false;
+      }
+
+      final newCoins = currentProfile.coins - coinsToSubtract;
+
+      // Actualizar las coins en Supabase
+      await Supabase.instance.client
+          .from('profiles')
+          .update({'coins': newCoins}).eq('id', profileId);
+
+      return true;
+    } catch (e, stackTrace) {
+      print('Error al restar coins del perfil: $e');
+      print('Stack trace: $stackTrace');
+      throw Exception('Error al restar coins: $e');
+    }
+  }
 }
