@@ -74,43 +74,67 @@ class _VideoScrollableViewState extends State<VideoScrollableView> {
 
   @override
   Widget build(BuildContext context) {
-    // Usar BlocBuilder para escuchar cambios en ProfileCubit (cuando cambian las monedas)
-    return BlocBuilder<ProfileCubit, ProfileState>(
-      builder: (context, profileState) {
-        // Verificar si se debe bloquear el scroll para el episodio actual
-        final currentEpisode = _currentIndex < widget.videos.length
-            ? widget.videos[_currentIndex].episodeNumber
-            : 0;
-        final shouldBlockScroll = _shouldBlockScroll(currentEpisode);
-
-        return PageView.builder(
-          controller: _pageController,
-          scrollDirection: Axis.vertical,
-          // Deshabilitar scroll si el modal está visible o si no hay suficientes monedas
-          physics: (_isModalVisible || shouldBlockScroll)
-              ? const NeverScrollableScrollPhysics()
-              : BouncingScrollPhysics(),
-          onPageChanged: _onPageChanged,
-          itemCount: widget.videos.length,
-          itemBuilder: (context, index) {
-            final Episode videoPost = widget.videos[index];
-
-            return _VideoPage(
-              videoPost: videoPost,
-              onModalVisibilityChanged: _onModalVisibilityChanged,
-              onRedirectBack: () {
-                if (index > 0) {
-                  _pageController.animateToPage(
-                    index - 1,
-                    duration: const Duration(milliseconds: 400),
-                    curve: Curves.easeInOutCubic,
-                  );
-                }
-              },
-            );
-          },
-        );
+    // Usar BlocListener y BlocBuilder para escuchar cambios en ProfileCubit
+    return BlocListener<ProfileCubit, ProfileState>(
+      listenWhen: (previous, current) {
+        // Escuchar cuando las monedas aumentan y el modal está visible
+        final previousCoins = previous.profile?.coins ?? 0;
+        final currentCoins = current.profile?.coins ?? 0;
+        return currentCoins > previousCoins && _isModalVisible;
       },
+      listener: (context, state) {
+        // Si las monedas aumentaron y el modal está visible, actualizar el estado
+        if (state.profile != null && state.profile!.coins >= 2) {
+          setState(() {
+            _isModalVisible = false;
+          });
+        }
+      },
+      child: BlocBuilder<ProfileCubit, ProfileState>(
+        buildWhen: (previous, current) {
+          // Reconstruir cuando cambien las monedas del perfil o cuando cambie el perfil
+          final previousCoins = previous.profile?.coins ?? 0;
+          final currentCoins = current.profile?.coins ?? 0;
+          final coinsChanged = previousCoins != currentCoins;
+          final profileChanged = previous.profile != current.profile;
+          return coinsChanged || profileChanged;
+        },
+        builder: (context, profileState) {
+          // Verificar si se debe bloquear el scroll para el episodio actual
+          final currentEpisode = _currentIndex < widget.videos.length
+              ? widget.videos[_currentIndex].episodeNumber
+              : 0;
+          final shouldBlockScroll = _shouldBlockScroll(currentEpisode);
+
+          return PageView.builder(
+            controller: _pageController,
+            scrollDirection: Axis.vertical,
+            // Deshabilitar scroll si el modal está visible o si no hay suficientes monedas
+            physics: (_isModalVisible || shouldBlockScroll)
+                ? const NeverScrollableScrollPhysics()
+                : BouncingScrollPhysics(),
+            onPageChanged: _onPageChanged,
+            itemCount: widget.videos.length,
+            itemBuilder: (context, index) {
+              final Episode videoPost = widget.videos[index];
+
+              return _VideoPage(
+                videoPost: videoPost,
+                onModalVisibilityChanged: _onModalVisibilityChanged,
+                onRedirectBack: () {
+                  if (index > 0) {
+                    _pageController.animateToPage(
+                      index - 1,
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeInOutCubic,
+                    );
+                  }
+                },
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
@@ -155,15 +179,16 @@ class _VideoPageState extends State<_VideoPage>
       curve: Curves.easeOutCubic,
     ));
 
-    // Validar primero el episodio 10, luego las monedas
+    // Validar y descontar monedas desde el capítulo 10 en adelante
     if (widget.videoPost.episodeNumber == 10) {
+      // Para el episodio 10, esperar 2 segundos antes de validar
       _timer = Timer(const Duration(seconds: 2), () {
         if (mounted) {
           _validateCoinsAndShowModal();
         }
       });
-    } else if (widget.videoPost.episodeNumber >= 10) {
-      // Para episodios 10 o superior, validar monedas inmediatamente
+    } else if (widget.videoPost.episodeNumber > 10) {
+      // Para episodios superiores a 10, validar y descontar inmediatamente
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _validateCoinsAndShowModal();
@@ -173,36 +198,60 @@ class _VideoPageState extends State<_VideoPage>
   }
 
   /// Valida si el usuario tiene suficientes monedas (2 por episodio)
-  /// Si no tiene, muestra el modal de refill
-  void _validateCoinsAndShowModal() {
+  /// Si tiene, descuenta las monedas. Si no tiene, muestra el modal de refill
+  Future<void> _validateCoinsAndShowModal() async {
     if (!mounted) return;
 
     const coinsPerEpisode = 2;
     final profileCubit = context.read<ProfileCubit>();
     final profile = profileCubit.state.profile;
+    final authState = context.read<AuthCubit>().state;
+
+    // Si no está autenticado, mostrar modal
+    if (authState is! AuthSuccess) {
+      _displayRefillModal();
+      return;
+    }
 
     // Si no hay perfil cargado, intentar cargarlo primero
     if (profile == null) {
-      final authState = context.read<AuthCubit>().state;
-      if (authState is AuthSuccess) {
-        profileCubit.loadUserProfile(authState.user.id).then((_) {
-          if (mounted) {
-            final updatedProfile = profileCubit.state.profile;
-            if (updatedProfile == null ||
-                updatedProfile.coins < coinsPerEpisode) {
-              _displayRefillModal();
-            }
-          }
-        });
-      } else {
-        // Si no está autenticado, mostrar modal
+      await profileCubit.loadUserProfile(authState.user.id);
+      if (!mounted) return;
+      final updatedProfile = profileCubit.state.profile;
+      if (updatedProfile == null || updatedProfile.coins < coinsPerEpisode) {
         _displayRefillModal();
+        return;
       }
+    }
+
+    final currentProfile = profileCubit.state.profile;
+    if (currentProfile == null) {
+      _displayRefillModal();
       return;
     }
 
     // Validar si tiene suficientes monedas
-    if (profile.coins < coinsPerEpisode) {
+    if (currentProfile.coins >= coinsPerEpisode) {
+      // Si tiene suficientes monedas, descontarlas
+      final success =
+          await profileCubit.subtractCoins(authState.user.id, coinsPerEpisode);
+      if (!mounted) return;
+
+      if (!success) {
+        // Si no se pudo restar, mostrar modal
+        _displayRefillModal();
+      } else {
+        // Si se descontó exitosamente, cerrar el modal si está abierto
+        if (_showRefillModal || _showQuickRefills) {
+          setState(() {
+            _showRefillModal = false;
+            _showQuickRefills = false;
+          });
+          widget.onModalVisibilityChanged?.call(false);
+        }
+      }
+    } else {
+      // No tiene suficientes monedas, mostrar modal
       _displayRefillModal();
     }
   }
@@ -287,36 +336,54 @@ class _VideoPageState extends State<_VideoPage>
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        //video player + gradientes
-        SizedBox.expand(
-            child: FullScreenPlayer(
-          videoUrl: widget.videoPost.episodeUrl,
-          caption: widget.videoPost.episodeNumber.toString(),
-          overlay: BlocBuilder<VideoCubit, VideoState>(
-            buildWhen: (previous, current) {
-              // Solo reconstruir cuando cambie el controller o el estado de inicialización
-              return previous.controller != current.controller ||
-                  previous.isInitialized != current.isInitialized;
-            },
-            builder: (context, videoState) {
-              return Positioned(
-                bottom: 20,
-                left: 20,
-                right: 20,
-                child: videoState.controller != null && videoState.isInitialized
-                    ? _VideoProgressBar(
-                        controller: videoState.controller!,
-                      )
-                    : const SizedBox.shrink(),
-              );
-            },
-          ),
-        )),
+    return BlocListener<ProfileCubit, ProfileState>(
+      listenWhen: (previous, current) {
+        // Escuchar cuando las monedas aumentan (después de una compra)
+        final previousCoins = previous.profile?.coins ?? 0;
+        final currentCoins = current.profile?.coins ?? 0;
+        // Solo escuchar si las monedas aumentaron y el modal está visible
+        return currentCoins > previousCoins &&
+            (_showRefillModal || _showQuickRefills);
+      },
+      listener: (context, state) {
+        // Si las monedas aumentaron y el modal está visible, validar de nuevo
+        if (state.profile != null && state.profile!.coins >= 2) {
+          // Validar y descontar monedas de nuevo
+          // Esto cerrará el modal automáticamente si tiene suficientes monedas
+          _validateCoinsAndShowModal();
+        }
+      },
+      child: Stack(
+        children: [
+          //video player + gradientes
+          SizedBox.expand(
+              child: FullScreenPlayer(
+            videoUrl: widget.videoPost.episodeUrl,
+            caption: widget.videoPost.episodeNumber.toString(),
+            overlay: BlocBuilder<VideoCubit, VideoState>(
+              buildWhen: (previous, current) {
+                // Solo reconstruir cuando cambie el controller o el estado de inicialización
+                return previous.controller != current.controller ||
+                    previous.isInitialized != current.isInitialized;
+              },
+              builder: (context, videoState) {
+                return Positioned(
+                  bottom: 20,
+                  left: 20,
+                  right: 20,
+                  child:
+                      videoState.controller != null && videoState.isInitialized
+                          ? _VideoProgressBar(
+                              controller: videoState.controller!,
+                            )
+                          : const SizedBox.shrink(),
+                );
+              },
+            ),
+          )),
 
-        // Botón de play/pause usando VideoCubit
-        /*BlocBuilder<VideoCubit, VideoState>(
+          // Botón de play/pause usando VideoCubit
+          /*BlocBuilder<VideoCubit, VideoState>(
           buildWhen: (previous, current) {
             // Solo reconstruir cuando cambie el estado de reproducción
             return previous.controller?.value.isPlaying !=
@@ -346,84 +413,49 @@ class _VideoPageState extends State<_VideoPage>
           },
         ),*/
 
-        // botones
-        Positioned(
-          bottom: 40,
-          right: 20,
-          child: VideoButtons(video: widget.videoPost),
-        ),
-        Positioned(
-          bottom: 40,
-          left: 20,
-          right: 80, // Menos espacio para dar más ancho a _VideoInfo
-          child: _VideoInfo(
-            title: 'Flash Marrige ${widget.videoPost.episodeNumber}',
-            description:
-                'A flash marriage" synopsis typically involves a fast, often unexpected marriage between strangers or acquaintances, common in Chinese web novels and dramas like Flash Marriage: The Big Shots Pampered Wife, where a heroine (like Bella) enters a contract marriage with a powerful CEO (Jesse) for convenience (revenge, family, business), only for genuine romance to blossom amidst corporate rivals and challenges, turning their fake union into real love',
-            currentEpisode: widget.videoPost.episodeNumber,
-            totalEpisodes: 11,
-          ),
-        ),
-
-        // Overlay oscuro cuando el modal está visible
-        if ((_showRefillModal || _showQuickRefills) && _shouldShowModal())
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(0.8),
-            ),
-          ),
-
-        // Modal de Refill
-        // Validar primero episodeNumber == 10, luego las monedas
-        if (_showRefillModal && _shouldShowModal())
-          Center(
-            child: Stack(
-              children: [
-                _RefillModal(
-                  episode: widget.videoPost,
-                  onRefillToWatch: _onRefillToWatch,
-                ),
-                // Botón X para cerrar en la esquina superior derecha
-                Positioned(
-                  top: MediaQuery.of(context).padding.top + 10,
-                  right: 20,
-                  child: GestureDetector(
-                    onTap: _onCloseModal,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-        // QuickRefillsWidget con animación de slide desde abajo
-        if (_showQuickRefills && _shouldShowModal())
+          // botones
           Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: SlideTransition(
-              position: _slideAnimation,
+            bottom: 40,
+            right: 20,
+            child: VideoButtons(video: widget.videoPost),
+          ),
+          Positioned(
+            bottom: 40,
+            left: 20,
+            right: 80, // Menos espacio para dar más ancho a _VideoInfo
+            child: _VideoInfo(
+              title: 'Flash Marrige ${widget.videoPost.episodeNumber}',
+              description:
+                  'A flash marriage" synopsis typically involves a fast, often unexpected marriage between strangers or acquaintances, common in Chinese web novels and dramas like Flash Marriage: The Big Shots Pampered Wife, where a heroine (like Bella) enters a contract marriage with a powerful CEO (Jesse) for convenience (revenge, family, business), only for genuine romance to blossom amidst corporate rivals and challenges, turning their fake union into real love',
+              currentEpisode: widget.videoPost.episodeNumber,
+              totalEpisodes: 11,
+            ),
+          ),
+
+          // Overlay oscuro cuando el modal está visible
+          if ((_showRefillModal || _showQuickRefills) && _shouldShowModal())
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.8),
+              ),
+            ),
+
+          // Modal de Refill
+          // Validar primero episodeNumber == 10, luego las monedas
+          if (_showRefillModal && _shouldShowModal())
+            Center(
               child: Stack(
                 children: [
-                  const QuickRefillsWidget(),
-                  // Botón X para cerrar QuickRefillsWidget en la esquina superior derecha
+                  _RefillModal(
+                    episode: widget.videoPost,
+                    onRefillToWatch: _onRefillToWatch,
+                  ),
+                  // Botón X para cerrar en la esquina superior derecha
                   Positioned(
                     top: MediaQuery.of(context).padding.top + 10,
                     right: 20,
                     child: GestureDetector(
-                      onTap: _onCloseQuickRefills,
+                      onTap: _onCloseModal,
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -441,8 +473,44 @@ class _VideoPageState extends State<_VideoPage>
                 ],
               ),
             ),
-          ),
-      ],
+
+          // QuickRefillsWidget con animación de slide desde abajo
+          if (_showQuickRefills && _shouldShowModal())
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: Stack(
+                  children: [
+                    const QuickRefillsWidget(),
+                    // Botón X para cerrar QuickRefillsWidget en la esquina superior derecha
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 10,
+                      right: 20,
+                      child: GestureDetector(
+                        onTap: _onCloseQuickRefills,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
