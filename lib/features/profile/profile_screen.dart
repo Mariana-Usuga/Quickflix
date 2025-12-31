@@ -236,19 +236,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                               const SizedBox(height: 16),
 
-                              // Sign out button (disabled look)
-                              Container(
-                                height: 52,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1F1F1F),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    'Sign Out',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: Colors.redAccent,
-                                      fontWeight: FontWeight.w600,
+                              // Sign out button
+                              InkWell(
+                                onTap: () {
+                                  context.read<AuthCubit>().signOut();
+                                  context.go('/login');
+                                },
+                                child: Container(
+                                  height: 52,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1F1F1F),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      'Sign Out',
+                                      style:
+                                          theme.textTheme.bodyMedium?.copyWith(
+                                        color: Colors.redAccent,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
                                 ),

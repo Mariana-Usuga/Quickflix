@@ -97,7 +97,7 @@ class VideoCubit extends Cubit<VideoState> {
     if (controller != null && controller.value.isInitialized) {
       if (controller.value.isPlaying) {
         controller.pause();
-      } else {
+      } else { 
         controller.play();
       }
     }
