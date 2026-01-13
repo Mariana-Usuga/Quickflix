@@ -1,4 +1,4 @@
-class VideoPost {
+class VideoTitle {
   final int id;
   final String caption;
   final String videoUrl;
@@ -9,7 +9,7 @@ class VideoPost {
   final int numberOfSeasons;
   final String synopsis;
 
-  VideoPost({
+  VideoTitle({
     required this.id,
     required this.caption,
     required this.videoUrl,

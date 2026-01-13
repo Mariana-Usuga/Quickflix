@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:quickflix/features/home/views/home_view.dart';
-import 'package:quickflix/features/my_list/my_list_screen.dart';
-import 'package:quickflix/features/profile/profile_screen.dart';
+import 'package:quickflix/features/my_list/views/my_list_view.dart';
+import 'package:quickflix/features/profile/views/profile_screen.dart';
 
-import 'package:quickflix/features/widgets/home/bottom_navigation_bar.dart';
-import 'package:quickflix/features/widgets/my_list/my_list_item.dart';
+import 'package:quickflix/features/home/widgets/bottom_navigation_bar.dart';
 
 class HomeScreen extends StatelessWidget {
   static const name = 'home-screen';
@@ -14,8 +13,8 @@ class HomeScreen extends StatelessWidget {
 
   final viewRoutes = const <Widget>[
     HomeView(),
-    MyListItem(),
-    MyListScreen(),
+    MyListView(),
+    MyListView(),
     ProfileScreen(),
     //PopularView(),
     //FavoritesView(),

@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:quickflix/cubit/movies_cubit.dart';
-import 'package:quickflix/features/auth/cubit/auth_cubit.dart';
+import 'package:quickflix/shared/cubits/titles/titles_cubit.dart';
+import 'package:quickflix/features/auth/cubit/auth_cubit.dart' as auth;
 import 'package:quickflix/features/profile/cubit/profile_cubit.dart';
-import 'package:quickflix/features/widgets/video/cubit/video_cubit.dart';
 import 'package:quickflix/services/local_video_services.dart';
 import 'package:quickflix/core/services/supabase_service.dart';
 import 'package:quickflix/core/router/app_router.dart';
@@ -29,15 +28,15 @@ void main() async {
   await initRevenueCat();
 
   // Crear el AuthCubit antes del router con LocalVideoServices
-  final authCubit = AuthCubit(Supabase.instance.client,
-      localVideoServices: localVideoServices);
+  final authCubit = auth.AuthCubit(Supabase.instance.client,
+      localVideoServices: localVideoServices,
+      profileCubit: ProfileCubit(localVideoServices: localVideoServices));
 
   // Inicializar el router con el AuthCubit
   appRouter = createAppRouter(authCubit);
 
   runApp(MultiBlocProvider(providers: [
     BlocProvider.value(value: authCubit),
-    BlocProvider(create: (context) => VideoCubit()),
     BlocProvider(
         create: (context) =>
             ProfileCubit(localVideoServices: localVideoServices)),
@@ -52,17 +51,34 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'TOKTIK',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme().gettheme(),
-      routerConfig: appRouter,
-      // Asegurar que el AuthCubit se inicialice accediendo a él aquí
-      builder: (context, child) {
-        // Esto fuerza la inicialización del AuthCubit al inicio
-        context.read<AuthCubit>();
-        return child ?? const SizedBox.shrink();
+    return BlocListener<auth.AuthCubit, auth.AuthState>(
+      listener: (context, authState) {
+        // Cuando el usuario se autentica, cargar el perfil en ProfileCubit
+        if (authState is auth.AuthSuccess) {
+          final profileCubit = context.read<ProfileCubit>();
+          // Solo cargar si el perfil no está cargado o es diferente
+          if (profileCubit.state.profile == null ||
+              profileCubit.state.profile?.id != authState.user.id) {
+            profileCubit.loadUserProfile(authState.user.id);
+          }
+        } else if (authState is auth.Unauthenticated) {
+          // Limpiar el perfil cuando el usuario se desautentica
+          final profileCubit = context.read<ProfileCubit>();
+          profileCubit.clearProfile();
+        }
       },
+      child: MaterialApp.router(
+        title: 'TOKTIK',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme().gettheme(),
+        routerConfig: appRouter,
+        // Asegurar que el AuthCubit se inicialice accediendo a él aquí
+        builder: (context, child) {
+          // Esto fuerza la inicialización del AuthCubit al inicio
+          context.read<auth.AuthCubit>();
+          return child ?? const SizedBox.shrink();
+        },
+      ),
     );
   }
 }
@@ -72,7 +88,8 @@ Future<void> initRevenueCat() async {
 
   await Purchases.configure(
     PurchasesConfiguration(
-      'test_kNWInuFSAQtMMtSVNdMaVFNsOfk', // ← la key de RevenueCat
+      //'test_kNWInuFSAQtMMtSVNdMaVFNsOfk', // ← la key de RevenueCat
+      'goog_eLtOqZVxGBeHfcPXoVujvNAvrJe',
     ),
   );
 }

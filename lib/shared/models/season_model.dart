@@ -1,21 +1,16 @@
-class Season {
-  final int id;
-  final DateTime createdAt;
-  final int titleId;
-  final String name;
-  final String? posterUrl;
-  final int seasonNumber;
+import 'package:quickflix/shared/entities/season.dart';
 
-  const Season({
-    required this.id,
-    required this.createdAt,
-    required this.titleId,
-    required this.name,
-    this.posterUrl,
-    required this.seasonNumber,
+class SeasonModel extends Season {
+  const SeasonModel({
+    required super.id,
+    required super.createdAt,
+    required super.titleId,
+    required super.name,
+    super.posterUrl,
+    required super.seasonNumber,
   });
 
-  factory Season.fromJson(Map<String, dynamic> json) {
+  factory SeasonModel.fromJson(Map<String, dynamic> json) {
     // Parsear created_at
     DateTime? createdAt;
     if (json['created_at'] != null) {
@@ -27,7 +22,7 @@ class Season {
     }
     createdAt ??= DateTime.now();
 
-    return Season(
+    return SeasonModel(
       id: json['id'] as int? ?? 0,
       createdAt: createdAt,
       titleId: json['title_id'] as int? ?? 0,
@@ -46,4 +41,3 @@ class Season {
         'season_number': seasonNumber,
       };
 }
-

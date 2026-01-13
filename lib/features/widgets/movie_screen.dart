@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:quickflix/cubit/movies_cubit.dart';
+import 'package:quickflix/shared/cubits/titles/titles_cubit.dart';
 import 'package:quickflix/features/widgets/home/movie_horizontal_listview.dart';
-import 'package:quickflix/models/episodes.dart';
-import 'package:quickflix/models/season.dart';
-import 'package:quickflix/models/video_post.dart';
+import 'package:quickflix/shared/entities/episode.dart';
+import 'package:quickflix/shared/entities/season.dart';
+import 'package:quickflix/shared/models/season_model.dart';
+import 'package:quickflix/shared/entities/video_title.dart';
 
 class MovieScreen extends StatefulWidget {
   static const name = 'movie-screen';
@@ -77,7 +78,7 @@ class MovieScreenState extends State<MovieScreen> {
 }
 
 class _ContentDetails extends StatefulWidget {
-  final VideoPost movie;
+  final VideoTitle movie;
 
   const _ContentDetails({required this.movie});
 
@@ -252,7 +253,9 @@ class _ContentDetailsState extends State<_ContentDetails> {
                   : <Episode>[];
 
               // Inicializar selectedSeasonId si no está establecido
-              if (selectedSeasonId == null && seasons.isNotEmpty && selectedSeason != null) {
+              if (selectedSeasonId == null &&
+                  seasons.isNotEmpty &&
+                  selectedSeason != null) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (mounted) {
                     setState(() {
@@ -593,7 +596,7 @@ class _EpisodeButton extends StatelessWidget {
 }
 
 class _CustomSliverAppBar extends StatelessWidget {
-  final VideoPost movie;
+  final VideoTitle movie;
 
   const _CustomSliverAppBar({required this.movie});
 

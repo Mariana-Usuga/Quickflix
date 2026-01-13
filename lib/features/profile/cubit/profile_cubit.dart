@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:quickflix/models/profile.dart';
+import 'package:quickflix/shared/entities/profile.dart';
+import 'package:quickflix/shared/models/profile_model.dart';
 import 'package:quickflix/services/local_video_services.dart';
 
 part 'profile_state.dart';
@@ -26,6 +27,20 @@ class ProfileCubit extends Cubit<ProfileState> {
       emit(state.copyWith(
         isLoading: false,
         error: e.toString(),
+      ));
+    }
+  }
+
+// Método para actualizar las monedas localmente sin volver a llamar a la API
+  void updateLocalCoins(int newCoins) {
+    if (state.profile != null) {
+      emit(state.copyWith(
+        profile: Profile(
+          id: state.profile!.id,
+          createdAt: state.profile!.createdAt,
+          coins: newCoins,
+          photoProfile: state.profile!.photoProfile,
+        ),
       ));
     }
   }
@@ -71,5 +86,10 @@ class ProfileCubit extends Cubit<ProfileState> {
       ));
       return false;
     }
+  }
+
+  /// Limpia el perfil (útil cuando el usuario se desautentica)
+  void clearProfile() {
+    emit(const ProfileState());
   }
 }

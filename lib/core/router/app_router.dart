@@ -1,12 +1,12 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:quickflix/features/auth/cubit/auth_cubit.dart';
-import 'package:quickflix/features/auth/login_screen.dart';
-import 'package:quickflix/features/auth/splash_screen.dart';
-import 'package:quickflix/features/discover/discover_screen.dart';
+import 'package:quickflix/features/auth/screens/login_screen.dart';
+import 'package:quickflix/features/auth/screens/splash_screen.dart';
+import 'package:quickflix/features/discover/screens/discover_screen.dart';
 import 'package:quickflix/features/home/home_screen.dart';
-import 'package:quickflix/features/profile/privacy_policy_screen.dart';
-import 'package:quickflix/features/profile/terms_of_use_screen.dart';
+import 'package:quickflix/features/profile/screeens/privacy_policy_screen.dart';
+import 'package:quickflix/features/profile/screeens/terms_of_use_screen.dart';
 import 'package:quickflix/features/widgets/movie_screen.dart';
 import 'package:quickflix/core/router/auth_listener.dart';
 

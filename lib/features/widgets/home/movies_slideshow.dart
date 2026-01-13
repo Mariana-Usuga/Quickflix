@@ -7,10 +7,10 @@ import 'package:quickflix/features/widgets/home/category_menu.dart';
 import 'package:quickflix/features/widgets/home/top_bar.dart';
 import 'package:quickflix/features/widgets/home/video_info_card.dart';
 import 'package:quickflix/features/widgets/shared/custom_gradient.dart';
-import 'package:quickflix/models/video_post.dart';
+import 'package:quickflix/shared/entities/video_title.dart';
 
 class MoviesSlideshow extends StatefulWidget {
-  final List<VideoPost> movies;
+  final List<VideoTitle> movies;
 
   const MoviesSlideshow({super.key, required this.movies});
 
@@ -41,7 +41,7 @@ class _MoviesSlideshowState extends State<MoviesSlideshow> {
         SizedBox(
           width: double.infinity,
           height: availableHeight *
-              0.90 , // Aumentado de 0.70 a 0.85 para hacer la imagen más grande
+              0.90, // Aumentado de 0.70 a 0.85 para hacer la imagen más grande
           // 2. Usamos un STACK para superponer capas
           child: Stack(
             children: [
@@ -109,7 +109,7 @@ class _MoviesSlideshowState extends State<MoviesSlideshow> {
 
 // 3. El Slide ahora es "tonto", solo muestra la imagen
 class _Slide extends StatelessWidget {
-  final VideoPost movie;
+  final VideoTitle movie;
 
   const _Slide({required this.movie});
 

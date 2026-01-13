@@ -1,17 +1,14 @@
-class Profile {
-  final String id; // UUID
-  final DateTime createdAt;
-  final int coins;
-  final String? photoProfile;
+import 'package:quickflix/shared/entities/profile.dart';
 
-  const Profile({
-    required this.id,
-    required this.createdAt,
-    required this.coins,
-    this.photoProfile,
+class ProfileModel extends Profile {
+  const ProfileModel({
+    required super.id,
+    required super.createdAt,
+    required super.coins,
+    super.photoProfile,
   });
 
-  factory Profile.fromJson(Map<String, dynamic> json) {
+  factory ProfileModel.fromJson(Map<String, dynamic> json) {
     // Parsear created_at
     DateTime? createdAt;
     if (json['created_at'] != null) {
@@ -23,7 +20,7 @@ class Profile {
     }
     createdAt ??= DateTime.now();
 
-    return Profile(
+    return ProfileModel(
       id: json['id'] as String? ?? '',
       createdAt: createdAt,
       coins: json['coins'] as int? ?? 0,

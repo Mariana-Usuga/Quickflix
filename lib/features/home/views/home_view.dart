@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
-import 'package:quickflix/cubit/movies_cubit.dart';
+import 'package:quickflix/shared/cubits/titles/titles_cubit.dart';
 import 'package:quickflix/features/widgets/home/movie_horizontal_list_top10.dart';
 import 'package:quickflix/features/widgets/home/movie_horizontal_listview.dart';
 import 'package:quickflix/features/widgets/home/movies_slideshow.dart';

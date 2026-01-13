@@ -3,19 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:quickflix/features/widgets/shared/move_item.dart';
+import 'package:quickflix/shared/entities/video_title.dart';
 
-import 'package:quickflix/models/movie.dart';
+typedef SearchMoviesCallback = Future<List<VideoTitle>> Function(String query);
 
-typedef SearchMoviesCallback = Future<List<Movie>> Function(String query);
-
-class SearchMovieDelegate extends SearchDelegate<Movie?> {
+class SearchMovieDelegate extends SearchDelegate<VideoTitle?> {
   final SearchMoviesCallback searchMovies;
 
-  List<Movie> initialMovies;
+  List<VideoTitle> initialMovies;
 
-  StreamController<List<Movie>> debouncedMovies = StreamController.broadcast();
+  StreamController<List<VideoTitle>> debouncedMovies =
+      StreamController.broadcast();
 
   StreamController<bool> isLoadingStream = StreamController.broadcast();
 
@@ -73,7 +72,7 @@ class SearchMovieDelegate extends SearchDelegate<Movie?> {
             movie: movies[index],
             profileId:
                 '8057f308-db04-4775-8219-a882a6a4e5d6', // TODO: Obtener del usuario autenticado
-            onMovieSelected: (BuildContext context, Movie movie) {
+            onMovieSelected: (BuildContext context, VideoTitle movie) {
               clearStreams();
               // Navegar a MovieScreen y cerrar el search
               context.push('/home/0/movie/${movie.id}');

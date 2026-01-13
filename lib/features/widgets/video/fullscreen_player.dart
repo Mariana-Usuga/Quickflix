@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:quickflix/features/widgets/video/cubit/video_cubit.dart';
+import 'package:quickflix/shared/cubits/titles/titles_cubit.dart';
 import 'package:quickflix/features/widgets/video/video_background.dart';
 import 'package:video_player/video_player.dart';
 
@@ -21,12 +21,12 @@ class FullScreenPlayer extends StatefulWidget {
 }
 
 class _FullScreenPlayerState extends State<FullScreenPlayer> {
-  late final VideoCubit _videoCubit;
+  late final MoviesCubit _videoCubit;
 
   @override
   void initState() {
     super.initState();
-    _videoCubit = VideoCubit();
+    _videoCubit = context.read<MoviesCubit>();
     _videoCubit.initializeVideo(widget.videoUrl);
   }
 
@@ -49,11 +49,11 @@ class _FullScreenPlayerState extends State<FullScreenPlayer> {
   Widget build(BuildContext context) {
     return BlocProvider.value(
       value: _videoCubit,
-      child: BlocBuilder<VideoCubit, VideoState>(
+      child: BlocBuilder<MoviesCubit, MoviesState>(
         bloc: _videoCubit,
         buildWhen: (previous, current) {
           // Solo reconstruir cuando cambie el controller o el estado de inicialización
-          return previous.controller != current.controller ||
+          return previous.videoController != current.videoController ||
               previous.isInitialized != current.isInitialized;
         },
         builder: (context, state) {

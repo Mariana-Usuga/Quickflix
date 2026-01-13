@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:quickflix/models/video_post.dart';
+import 'package:quickflix/shared/entities/video_title.dart';
 
 class VideoInfoCard extends StatelessWidget {
-  final VideoPost video;
+  final VideoTitle video;
   final int currentIndex;
   final int totalVideos;
   final VoidCallback? onPlayPressed;

@@ -1,32 +1,19 @@
-import 'dart:typed_data';
+import 'package:quickflix/shared/entities/video_title.dart';
 
-import 'package:quickflix/models/video_post.dart';
-
-class LocalVideoModel {
-  final int id;
-  final String name;
-  final String videoUrl;
-  final String imageUrl;
-  final int likes;
-  final int views;
-  final String gender;
-  final int numberOfSeasons;
-  final String synopsis;
-
-  LocalVideoModel({
-    //este es el constructor
-    required this.id,
-    required this.name,
-    required this.videoUrl,
-    required this.imageUrl,
-    this.likes = 0,
-    this.views = 0,
-    required this.gender,
-    required this.numberOfSeasons,
-    required this.synopsis,
+class TitleModel extends VideoTitle {
+  TitleModel({
+    required super.id,
+    required super.caption, // Mapeamos el 'name' del JSON a 'caption' de la entidad
+    required super.videoUrl,
+    required super.imageUrl,
+    super.likes = 0,
+    super.views = 0,
+    required super.gender,
+    required super.numberOfSeasons,
+    required super.synopsis,
   });
 
-  factory LocalVideoModel.fromJson(Map<String, dynamic> json) {
+  factory TitleModel.fromJson(Map<String, dynamic> json) {
     // Mapear campos de Supabase: title -> name, play_black_id -> videoUrl
     final int id = json['id'] ?? 0;
     final String title = json['title'] ?? json['name'] ?? 'no name';
@@ -38,9 +25,9 @@ class LocalVideoModel {
     final int? numberOfSeasons = json['number_of_seasons'] as int?;
     final String? synopsis = json['synopsis'] as String?;
 
-    return LocalVideoModel(
+    return TitleModel(
       id: id,
-      name: title,
+      caption: title,
       videoUrl: videoUrl ?? _buildMuxVideoUrl(playBlackId ?? playbackId),
       imageUrl: _buildImageUrl(imageUrl),
       likes: json['likes'] ?? 0,
@@ -70,16 +57,16 @@ class LocalVideoModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'name': name,
+        'name': caption,
         'videoUrl': videoUrl,
         'imageUrl': imageUrl,
         'likes': likes,
         'views': views,
       };
 
-  VideoPost toVideoPostEntity() => VideoPost(
+  VideoTitle toVideoPostEntity() => VideoTitle(
         id: id,
-        caption: name,
+        caption: caption,
         videoUrl: videoUrl,
         imageUrl: imageUrl,
         likes: likes,

@@ -1,8 +1,8 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:quickflix/models/episodes.dart';
-import 'package:quickflix/models/video_post.dart';
+import 'package:quickflix/shared/entities/episode.dart';
+import 'package:quickflix/shared/entities/video_title.dart';
 
 import '../../../core/utils/text_formatter.dart';
 

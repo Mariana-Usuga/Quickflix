@@ -1,12 +1,9 @@
-import 'dart:ui'; // Necesario para ImageFilter
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:quickflix/features/search/delegates/search_movie_delegate.dart';
-import 'package:quickflix/models/movie.dart';
+import 'package:quickflix/shared/entities/video_title.dart';
 import 'package:quickflix/services/local_video_services.dart';
-// Asegúrate de importar tus archivos necesarios:
-// import 'package:quickflix/features/search/search_movie_delegate.dart';
-// import 'package:quickflix/services/local_video_services.dart';
 
 class CustomBottomNavigation extends StatelessWidget {
   final int currentIndex;
@@ -21,7 +18,7 @@ class CustomBottomNavigation extends StatelessWidget {
       case 1:
         final localVideoServices =
             LocalVideoServices(); // Asegúrate de tener esta instancia o inyectarla
-        showSearch<Movie?>(
+        showSearch<VideoTitle?>(
             query: '',
             context: context,
             delegate: SearchMovieDelegate(

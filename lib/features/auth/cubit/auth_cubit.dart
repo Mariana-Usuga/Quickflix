@@ -1,8 +1,9 @@
 // lib/features/auth/cubit/auth_cubit.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:quickflix/models/user.dart';
-import 'package:quickflix/models/profile.dart';
+import 'package:quickflix/features/profile/cubit/profile_cubit.dart';
+import 'package:quickflix/shared/entities/user.dart';
+import 'package:quickflix/shared/models/profile_model.dart';
 import 'package:quickflix/services/local_video_services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:supabase/supabase.dart';
@@ -12,6 +13,7 @@ part 'auth_state.dart';
 class AuthCubit extends Cubit<AuthState> {
   final SupabaseClient supabase;
   final LocalVideoServices? localVideoServices;
+  final ProfileCubit profileCubit;
 
   // Callbacks para resetear otros cubits
   VoidCallback? _onResetHistory;
@@ -19,7 +21,9 @@ class AuthCubit extends Cubit<AuthState> {
   VoidCallback? _onResetProfile;
   VoidCallback? _onResetUpload;
 
-  AuthCubit(this.supabase, {this.localVideoServices}) : super(AuthLoading()) {
+  AuthCubit(this.supabase,
+      {this.localVideoServices, required this.profileCubit})
+      : super(AuthLoading()) {
     // Emitir AuthLoading mientras se verifica la sesión
     _checkInitialSession();
 
@@ -53,21 +57,11 @@ class AuthCubit extends Cubit<AuthState> {
 
       final userEntity = UserEntity(
         id: user.id,
-        email: user.email!,
+        email: user.email ?? 'no-email',
       );
 
-      // Intentar cargar el perfil si tenemos el servicio
-      Profile? profile;
-      if (localVideoServices != null) {
-        try {
-          profile = await localVideoServices!.getProfileById(user.id);
-        } catch (e) {
-          print("Error al cargar perfil: $e");
-          // Continuar sin perfil si hay error
-        }
-      }
-
-      emit(AuthSuccess(userEntity, profile: profile));
+      emit(AuthSuccess(userEntity));
+      profileCubit.loadUserProfile(user.id);
     } catch (e) {
       print("RevenueCat error updating subscription: $e");
       emit(AuthSuccess(UserEntity(id: user.id, email: user.email!)));

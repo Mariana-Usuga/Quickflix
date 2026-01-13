@@ -1,14 +1,15 @@
-import 'package:quickflix/models/local_video_model.dart';
-import 'package:quickflix/models/video_post.dart';
-import 'package:quickflix/models/movie.dart';
-import 'package:quickflix/models/episodes.dart';
-import 'package:quickflix/models/episode_model.dart';
-import 'package:quickflix/models/profile.dart';
-import 'package:quickflix/models/season.dart';
+import 'package:quickflix/shared/entities/profile.dart';
+import 'package:quickflix/shared/entities/season.dart';
+import 'package:quickflix/shared/models/title_model.dart';
+import 'package:quickflix/shared/entities/video_title.dart';
+import 'package:quickflix/shared/entities/episode.dart';
+import 'package:quickflix/shared/models/episode_model.dart';
+import 'package:quickflix/shared/models/profile_model.dart';
+import 'package:quickflix/shared/models/season_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LocalVideoServices {
-  Future<List<VideoPost>> getTrendingVideosByPage(int page) async {
+  Future<List<VideoTitle>> getTrendingVideosByPage(int page) async {
     const int pageSize = 10; // Cantidad de videos por página
 
     try {
@@ -21,11 +22,10 @@ class LocalVideoServices {
           .range((page - 1) * pageSize, page * pageSize - 1);
 
       // Convertir los datos de Supabase a VideoPost
-      final List<VideoPost> videos = (response as List)
-          .map((video) =>
-              LocalVideoModel.fromJson(video as Map<String, dynamic>)
-                  .toVideoPostEntity())
-          .cast<VideoPost>()
+      final List<VideoTitle> videos = (response as List)
+          .map((video) => TitleModel.fromJson(video as Map<String, dynamic>)
+              .toVideoPostEntity())
+          .cast<VideoTitle>()
           .toList();
 
       return videos;
@@ -37,7 +37,7 @@ class LocalVideoServices {
     }
   }
 
-  Future<List<Movie>> searchMoviesByQuery(String query) async {
+  Future<List<VideoTitle>> searchMoviesByQuery(String query) async {
     try {
       if (query.isEmpty) {
         return [];
@@ -52,9 +52,9 @@ class LocalVideoServices {
           .limit(20);
 
       // Convertir los datos de Supabase a Movie
-      final List<Movie> movies = (response as List)
-          .map(
-              (item) => Movie.fromContentAnalysis(item as Map<String, dynamic>))
+      final List<VideoTitle> movies = (response as List)
+          .map((item) => TitleModel.fromJson(item as Map<String, dynamic>)
+              .toVideoPostEntity())
           .toList();
 
       return movies;
@@ -78,7 +78,7 @@ class LocalVideoServices {
 
       // Convertir los datos de Supabase a Season
       final List<Season> seasons = (response as List)
-          .map((season) => Season.fromJson(season as Map<String, dynamic>))
+          .map((season) => SeasonModel.fromJson(season as Map<String, dynamic>))
           .toList();
 
       return seasons;
@@ -117,7 +117,7 @@ class LocalVideoServices {
 
   /// Obtiene los videos guardados según el profile_id desde la tabla user_saved
   /// profile_id es un UUID (String)
-  Future<List<VideoPost>> getSavedVideosByProfileId(String profileId) async {
+  Future<List<VideoTitle>> getSavedVideosByProfileId(String profileId) async {
     try {
       // Usar un join para obtener los títulos directamente desde user_saved
       // Asumiendo que hay una relación entre user_saved y titles
@@ -135,15 +135,15 @@ class LocalVideoServices {
       }
 
       // Extraer los datos de titles del join
-      final List<VideoPost> videos = (response as List)
+      final List<VideoTitle> videos = (response as List)
           .map((item) {
             // El join devuelve los datos de titles anidados
             final titleData = item['titles'] as Map<String, dynamic>?;
             if (titleData == null) return null;
 
-            return LocalVideoModel.fromJson(titleData).toVideoPostEntity();
+            return TitleModel.fromJson(titleData).toVideoPostEntity();
           })
-          .whereType<VideoPost>()
+          .whereType<VideoTitle>()
           .toList();
 
       return videos;
@@ -172,7 +172,7 @@ class LocalVideoServices {
         }
 
         // Obtener los títulos uno por uno o en lotes
-        final List<VideoPost> videos = [];
+        final List<VideoTitle> videos = [];
         for (final titleId in titleIds) {
           try {
             final titleResponse = await Supabase.instance.client
@@ -181,9 +181,9 @@ class LocalVideoServices {
                 .eq('id', titleId)
                 .single();
 
-            final video = LocalVideoModel.fromJson(
-                    Map<String, dynamic>.from(titleResponse))
-                .toVideoPostEntity();
+            final video =
+                TitleModel.fromJson(Map<String, dynamic>.from(titleResponse))
+                    .toVideoPostEntity();
             videos.add(video);
           } catch (_) {
             // Continuar con el siguiente si hay error
@@ -235,7 +235,8 @@ class LocalVideoServices {
 
   /// Obtiene los videos en progreso según el profile_id desde la tabla user_progress
   /// profile_id es un UUID (String)
-  Future<List<VideoPost>> getWatchingVideosByProfileId(String profileId) async {
+  Future<List<VideoTitle>> getWatchingVideosByProfileId(
+      String profileId) async {
     try {
       // Intentar usar un join para obtener los títulos directamente desde user_progress
       final response =
@@ -250,15 +251,15 @@ class LocalVideoServices {
       }
 
       // Extraer los datos de titles del join
-      final List<VideoPost> videos = (response as List)
+      final List<VideoTitle> videos = (response as List)
           .map((item) {
             // El join devuelve los datos de titles anidados
             final titleData = item['titles'] as Map<String, dynamic>?;
             if (titleData == null) return null;
 
-            return LocalVideoModel.fromJson(titleData).toVideoPostEntity();
+            return TitleModel.fromJson(titleData).toVideoPostEntity();
           })
-          .whereType<VideoPost>()
+          .whereType<VideoTitle>()
           .toList();
 
       return videos;
@@ -287,7 +288,7 @@ class LocalVideoServices {
         }
 
         // Obtener los títulos uno por uno o en lotes
-        final List<VideoPost> videos = [];
+        final List<VideoTitle> videos = [];
         for (final titleId in titleIds) {
           try {
             final titleResponse = await Supabase.instance.client
@@ -296,9 +297,9 @@ class LocalVideoServices {
                 .eq('id', titleId)
                 .single();
 
-            final video = LocalVideoModel.fromJson(
-                    Map<String, dynamic>.from(titleResponse))
-                .toVideoPostEntity();
+            final video =
+                TitleModel.fromJson(Map<String, dynamic>.from(titleResponse))
+                    .toVideoPostEntity();
             videos.add(video);
           } catch (_) {
             // Continuar con el siguiente si hay error
@@ -316,6 +317,26 @@ class LocalVideoServices {
     }
   }
 
+  Future<void> updateVideoProgress({
+    required String profileId,
+    required int titleId,
+    required int episodeId,
+    required int seconds,
+  }) async {
+    try {
+      await Supabase.instance.client.from('user_progress').upsert({
+        'profile_id': profileId,
+        'title_id': titleId,
+        'episode_id': episodeId,
+        'current_time_seconds': seconds,
+        'last_watched_at': DateTime.now().toIso8601String(),
+        'is_finished': false, // Podrías validar si seconds > 90% del total
+      });
+    } catch (e) {
+      print('Error guardando progreso: $e');
+    }
+  }
+
   /// Obtiene el perfil del usuario desde la tabla profiles
   /// profile_id es un UUID (String)
   Future<Profile> getProfileById(String profileId) async {
@@ -326,13 +347,15 @@ class LocalVideoServices {
           .eq('id', profileId)
           .single();
 
-      return Profile.fromJson(response);
+      return ProfileModel.fromJson(response);
     } catch (e, stackTrace) {
       print('Error al obtener perfil de Supabase: $e');
       print('Stack trace: $stackTrace');
       throw Exception('Error al obtener perfil: $e');
     }
   }
+
+// En tu VideoServices
 
   /// Actualiza las coins del perfil del usuario
   /// profileId es un UUID (String)

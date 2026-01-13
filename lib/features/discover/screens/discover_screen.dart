@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:quickflix/cubit/movies_cubit.dart';
+import 'package:quickflix/shared/cubits/titles/titles_cubit.dart';
 import 'package:quickflix/features/widgets/shared/video_scrolleable_view.dart';
 
 class DiscoverScreen extends StatefulWidget {

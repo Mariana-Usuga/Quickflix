@@ -2,10 +2,10 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:quickflix/models/video_post.dart';
+import 'package:quickflix/shared/entities/video_title.dart';
 
 class MovieHorizontalListView extends StatefulWidget {
-  final List<VideoPost> movies;
+  final List<VideoTitle> movies;
   final String? title;
   final String? subTitle;
   final VoidCallback? loadNextPage;
@@ -67,7 +67,7 @@ class _MovieHorizontalListViewState extends State<MovieHorizontalListView> {
 }
 
 class _Slide extends StatelessWidget {
-  final VideoPost movie;
+  final VideoTitle movie;
 
   const _Slide({required this.movie});
 

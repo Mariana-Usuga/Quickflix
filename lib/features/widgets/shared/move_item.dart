@@ -3,13 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:quickflix/cubit/movies_cubit.dart';
-import 'package:quickflix/models/movie.dart';
-import 'package:quickflix/models/video_post.dart';
+import 'package:quickflix/shared/cubits/titles/titles_cubit.dart';
+import 'package:quickflix/shared/entities/video_title.dart';
 
 class MovieItem extends StatefulWidget {
-  final Movie movie;
-  final Function(BuildContext, Movie) onMovieSelected; // cerrar el search
+  final VideoTitle movie;
+  final Function(BuildContext, VideoTitle) onMovieSelected; // cerrar el search
   final String profileId; // UUID del perfil del usuario
 
   const MovieItem({
@@ -50,16 +49,16 @@ class _MovieItemState extends State<MovieItem> {
         }
       } else {
         // Agregar a guardados
-        final videoPost = VideoPost(
+        final videoPost = VideoTitle(
           id: widget.movie.id,
-          caption: widget.movie.title,
-          videoUrl: widget.movie.backdropPath,
-          imageUrl: widget.movie.posterPath,
-          likes: widget.movie.voteCount,
-          views: widget.movie.popularity.toInt(),
+          caption: widget.movie.caption,
+          videoUrl: widget.movie.videoUrl,
+          imageUrl: widget.movie.imageUrl,
+          likes: widget.movie.likes,
+          views: widget.movie.views.toInt(),
           gender: '',
           numberOfSeasons: 0,
-          synopsis: widget.movie.overview,
+          synopsis: widget.movie.synopsis,
         );
         await cubit.saveVideo(widget.profileId, videoPost);
         if (mounted) {
@@ -105,7 +104,7 @@ class _MovieItemState extends State<MovieItem> {
                     borderRadius: BorderRadius.circular(12),
                     child: // widget.movie.posterPath.isNotEmpty
                         Image.network(
-                      widget.movie.posterPath,
+                      widget.movie.imageUrl,
                       width: 120,
                       height: 160,
                       fit: BoxFit.cover,
@@ -138,7 +137,7 @@ class _MovieItemState extends State<MovieItem> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                widget.movie.title,
+                                widget.movie.caption,
                                 style: GoogleFonts.inter(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
@@ -179,7 +178,7 @@ class _MovieItemState extends State<MovieItem> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '${_formatViews(widget.movie.popularity)}',
+                              '${_formatViews(widget.movie.views.toDouble())}',
                               style: GoogleFonts.inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w400,

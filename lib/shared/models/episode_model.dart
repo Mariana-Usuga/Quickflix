@@ -1,24 +1,15 @@
-import 'package:quickflix/models/episodes.dart';
+import 'package:quickflix/shared/entities/episode.dart';
 
-class EpisodeModel {
-  final int id;
-  final DateTime createdAt;
-  final int titleId;
-  final int episodeNumber;
-  final int priceCoins;
-  final String playBlackId;
-  final String episodeUrl;
-  final int? seasonId;
-
+class EpisodeModel extends Episode {
   EpisodeModel({
-    required this.id,
-    required this.createdAt,
-    required this.titleId,
-    required this.episodeNumber,
-    required this.priceCoins,
-    required this.playBlackId,
-    required this.episodeUrl,
-    this.seasonId,
+    required super.id,
+    required super.createdAt,
+    required super.titleId,
+    required super.episodeNumber,
+    required super.priceCoins,
+    required super.playBlackId,
+    required super.episodeUrl,
+    super.seasonId,
   });
 
   factory EpisodeModel.fromJson(Map<String, dynamic> json) {
