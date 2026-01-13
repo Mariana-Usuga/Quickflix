@@ -8,6 +8,8 @@ class VideoTitle {
   final String gender;
   final int numberOfSeasons;
   final String synopsis;
+  final double rating;
+  final String releaseDate;
 
   VideoTitle({
     required this.id,
@@ -19,5 +21,7 @@ class VideoTitle {
     required this.gender,
     required this.numberOfSeasons,
     required this.synopsis,
+    this.rating = 0,
+    required this.releaseDate,
   });
 }

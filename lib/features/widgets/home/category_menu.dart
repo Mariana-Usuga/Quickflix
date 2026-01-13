@@ -15,7 +15,8 @@ class CategoryMenu extends StatelessWidget {
     'New',
     'Popular',
     'Ranking',
-    'R',
+    'Comedy',
+    'Action',
   ];
 
   @override

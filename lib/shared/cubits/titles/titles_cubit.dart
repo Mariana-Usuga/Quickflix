@@ -14,7 +14,47 @@ class MoviesCubit extends Cubit<MoviesState> {
 
   MoviesCubit({required this.localVideoServices}) : super(const MoviesState());
 
-  void loadNextPage(dynamic content) async {
+  void changeCategory(String category) async {
+    if (state.selectedCategory == category && state.videos.isNotEmpty) return;
+
+    // 1. Limpiamos la lista actual y ponemos cargando
+    emit(state.copyWith(
+        videos: [],
+        isLoading: true,
+        selectedCategory: category,
+        isLastPage: false,
+        offset: 0 // Reseteamos paginación
+        ));
+
+    // 2. Cargamos los nuevos datos
+    loadNextPage();
+  }
+
+  void loadNextPage() async {
+    if (state.isLoading && state.videos.isNotEmpty) return;
+    if (state.isLastPage) return;
+
+    emit(state.copyWith(isLoading: true));
+
+    // Usamos el filtro guardado en el estado
+    final videos = await localVideoServices.getVideosByFilter(
+      category: state.selectedCategory,
+      page: (state.offset ~/ 10) + 1,
+    );
+
+    if (videos.isEmpty) {
+      emit(state.copyWith(isLoading: false, isLastPage: true));
+      return;
+    }
+
+    emit(state.copyWith(
+      isLoading: false,
+      videos: [...state.videos, ...videos],
+      offset: state.offset + 10,
+    ));
+  }
+
+  void loadNextPagee(dynamic content) async {
     if (state.isLoading || state.isLastPage) return;
 
     emit(state.copyWith(isLoading: true));

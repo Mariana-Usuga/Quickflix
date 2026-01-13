@@ -11,6 +11,8 @@ class TitleModel extends VideoTitle {
     required super.gender,
     required super.numberOfSeasons,
     required super.synopsis,
+    required super.rating,
+    required super.releaseDate,
   });
 
   factory TitleModel.fromJson(Map<String, dynamic> json) {
@@ -24,6 +26,8 @@ class TitleModel extends VideoTitle {
     final String? gender = json['gender'] as String?;
     final int? numberOfSeasons = json['number_of_seasons'] as int?;
     final String? synopsis = json['synopsis'] as String?;
+    final double? rating = json['rating'] as double?;
+    final String? releaseDate = json['release_date'] as String?;
 
     return TitleModel(
       id: id,
@@ -35,6 +39,8 @@ class TitleModel extends VideoTitle {
       gender: gender ?? '',
       numberOfSeasons: numberOfSeasons ?? 0,
       synopsis: synopsis ?? '',
+      rating: rating ?? 0,
+      releaseDate: releaseDate ?? '',
     );
   }
 
@@ -74,5 +80,7 @@ class TitleModel extends VideoTitle {
         gender: gender,
         numberOfSeasons: numberOfSeasons,
         synopsis: synopsis,
+        rating: rating,
+        releaseDate: releaseDate,
       );
 }

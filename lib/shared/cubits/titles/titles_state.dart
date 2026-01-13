@@ -18,6 +18,7 @@ class MoviesState {
   final String? videoError;
   final bool showVideoButtons;
   final String? currentVideoUrl;
+  final String selectedCategory;
 
   const MoviesState({
     this.episodes = const [],
@@ -35,6 +36,7 @@ class MoviesState {
     this.videoError,
     this.showVideoButtons = false,
     this.currentVideoUrl,
+    this.selectedCategory = 'Trending',
   });
 
   MoviesState copyWith({
@@ -53,6 +55,7 @@ class MoviesState {
     String? videoError,
     bool? showVideoButtons,
     String? currentVideoUrl,
+    String? selectedCategory,
   }) {
     return MoviesState(
       episodes: episodes ?? this.episodes,
@@ -70,6 +73,7 @@ class MoviesState {
       videoError: videoError,
       showVideoButtons: showVideoButtons ?? this.showVideoButtons,
       currentVideoUrl: currentVideoUrl ?? this.currentVideoUrl,
+      selectedCategory: selectedCategory ?? this.selectedCategory,
     );
   }
 

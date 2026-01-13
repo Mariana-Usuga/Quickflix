@@ -59,6 +59,8 @@ class _MovieItemState extends State<MovieItem> {
           gender: '',
           numberOfSeasons: 0,
           synopsis: widget.movie.synopsis,
+          rating: widget.movie.rating,
+          releaseDate: widget.movie.releaseDate,
         );
         await cubit.saveVideo(widget.profileId, videoPost);
         if (mounted) {

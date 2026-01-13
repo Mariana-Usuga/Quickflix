@@ -37,6 +37,48 @@ class LocalVideoServices {
     }
   }
 
+  Future<List<VideoTitle>> getVideosByFilter(
+      {required String category, int page = 1}) async {
+    const int pageSize = 10;
+
+    try {
+      dynamic query = Supabase.instance.client.from('titles').select();
+
+      // Aplicamos la lógica de filtrado/ordenamiento de la base de datos
+      switch (category) {
+        case 'New':
+          query = query.order('release_date', ascending: false);
+          break;
+        case 'Popular':
+          query = query.order('views_count', ascending: false);
+          break;
+        case 'Ranking':
+          query = query.order('rating', ascending: false);
+          break;
+        case 'Comedy':
+          query = query.filter(
+              'gender', 'eq', 'Comedy'); // Asegúrate que coincida con tu DB
+          break;
+        case 'Action':
+          query = query.filter('gender', 'eq', 'Action');
+          break;
+        default: // 'All'
+          query = query.order('created_at', ascending: false);
+      }
+
+      final response =
+          await query.range((page - 1) * pageSize, page * pageSize - 1);
+
+      final List<VideoTitle> videos = (response as List)
+          .map((video) => TitleModel.fromJson(video).toVideoPostEntity())
+          .toList();
+
+      return videos;
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
   Future<List<VideoTitle>> searchMoviesByQuery(String query) async {
     try {
       if (query.isEmpty) {
